@@ -6,7 +6,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { examSets } from './data/examSets';
 import { INITIAL_LESSON_CATALOG } from './data/lessonCatalog';
-import { LESSON_THEORY_CATALOG } from './data/lessonTheoryCatalog';
 import {
   ExamSet,
   StudentAnswers,
@@ -27,8 +26,6 @@ import { Part4StepOrdering } from './components/Part4StepOrdering';
 import { ResultReport } from './components/ResultReport';
 import { ImportWordModal } from './components/ImportWordModal';
 import { LessonCatalogModal } from './components/LessonCatalogModal';
-import { TheoryFormulaModal } from './components/TheoryFormulaModal';
-import { MathRenderer } from './components/MathRenderer';
 import {
   LeaderboardModal,
   INITIAL_LEADERBOARD_ENTRIES,
@@ -242,9 +239,7 @@ export default function App() {
 
   const [isImportWordOpen, setIsImportWordOpen] = useState(false);
   const [isLessonCatalogOpen, setIsLessonCatalogOpen] = useState(false);
-  const [isTheoryFormulaOpen, setIsTheoryFormulaOpen] = useState(false);
   const [selectedLessonId, setSelectedLessonId] = useState<string>('bai-1');
-  const [sidebarLessonTab, setSidebarLessonTab] = useState<'practice' | 'theory'>('practice');
   const [targetLessonForImport, setTargetLessonForImport] = useState<LessonCatalogItem | null>(
     null
   );
@@ -870,7 +865,6 @@ export default function App() {
         onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
         leaderboardCount={leaderboardEntries.length}
         onOpenLessonCatalog={() => setIsLessonCatalogOpen(true)}
-        onOpenTheoryFormula={() => setIsTheoryFormulaOpen(true)}
         activeLessonLabel={
           currentExam.lessonId
             ? `Bài ${currentExam.lessonId.replace('bai-', '')}`
@@ -1204,7 +1198,7 @@ export default function App() {
             )}
           </div>
 
-          {/* Right Column: Sticky Question Bubble Navigator + Lesson Catalog Widget + Leaderboard Widget (3-4 Cols) */}
+          {/* Right Column: Sticky Question Bubble Navigator (Phiếu Trả Lời) */}
           <div className="lg:col-span-4 xl:col-span-3 sticky top-20 space-y-4 no-print">
             <QuestionNav
               exam={currentExam}
@@ -1219,172 +1213,6 @@ export default function App() {
               studentClass={studentClass}
               onEditStudentInfo={() => setIsStudentModalOpen(true)}
             />
-
-            {/* Mục Gộp Tối Giản: Bài Học (Đề Ôn) & Lý Thuyết Công Thức SGK (Bài 1 -> Bài 27) */}
-            <div className="bg-[#071126] rounded-2xl border border-sky-900/70 p-4 shadow-xl space-y-3">
-              <div className="flex items-center justify-between border-b border-sky-900/70 pb-2.5">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300">
-                    <BookOpen className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-xs font-extrabold text-white uppercase tracking-wider">
-                      Bài Học & Lý Thuyết SGK
-                    </h3>
-                    <p className="text-[11px] text-sky-300">
-                      Bài 1 → Bài 27 · Đề ôn & Công thức chuẩn SGK
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Chọn nhanh Bài 1 -> Bài 27 (dùng chung 1 danh sách duy nhất) */}
-              <div className="space-y-2.5">
-                <div>
-                  <label className="block text-[11px] font-bold text-sky-300 mb-1">
-                    Chọn bài học (Bài 1 → Bài 27):
-                  </label>
-                  <select
-                    value={selectedLessonId}
-                    onChange={(e) => setSelectedLessonId(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-[#0b1739] border border-sky-800 text-xs font-bold text-white focus:outline-none focus:border-cyan-400 cursor-pointer"
-                  >
-                    {lessonCatalog.map((lesson) => (
-                      <option key={lesson.id} value={lesson.id} className="bg-[#071126]">
-                        {lesson.name}: {lesson.topicTitle}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Chuyển nhanh giữa Đề Ôn và Lý Thuyết Công Thức ngay trong 1 mục */}
-                <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-[#0b1739] border border-sky-900/80 text-[11px] font-bold">
-                  <button
-                    type="button"
-                    onClick={() => setSidebarLessonTab('practice')}
-                    className={`py-1.5 px-2 rounded-lg flex items-center justify-center gap-1 transition-all ${
-                      sidebarLessonTab === 'practice'
-                        ? 'bg-cyan-500 text-[#040817] font-black shadow-xs'
-                        : 'text-sky-300 hover:text-white'
-                    }`}
-                  >
-                    <FolderOpen className="w-3.5 h-3.5" />
-                    <span>Đề Ôn Tập</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSidebarLessonTab('theory')}
-                    className={`py-1.5 px-2 rounded-lg flex items-center justify-center gap-1 transition-all ${
-                      sidebarLessonTab === 'theory'
-                        ? 'bg-amber-400 text-[#040817] font-black shadow-xs'
-                        : 'text-amber-300 hover:text-white'
-                    }`}
-                  >
-                    <BookMarked className="w-3.5 h-3.5" />
-                    <span>Lý Thuyết</span>
-                  </button>
-                </div>
-
-                {sidebarLessonTab === 'practice' ? (
-                  (() => {
-                    const activeLesson =
-                      lessonCatalog.find((l) => l.id === selectedLessonId) || lessonCatalog[0];
-                    return (
-                      <div className="p-3 rounded-xl bg-[#0b1739]/90 border border-sky-800/80 space-y-2">
-                        <div className="flex items-center justify-between text-[11px] font-extrabold text-amber-300">
-                          <span className="flex items-center gap-1.5">
-                            <FolderOpen className="w-3.5 h-3.5 text-amber-400" />
-                            Danh mục: Đề ôn ({activeLesson.name})
-                          </span>
-                          <span className="font-mono text-[10px] text-sky-300">
-                            {activeLesson.practiceExams.length} đề
-                          </span>
-                        </div>
-
-                        <div className="space-y-1.5 max-h-36 overflow-y-auto pr-0.5">
-                          {activeLesson.practiceExams.map((exam, idx) => {
-                            const isCurrent = currentExam.id === exam.id;
-                            return (
-                              <button
-                                key={exam.id}
-                                type="button"
-                                onClick={() => handleSelectLessonPracticeExam(exam, activeLesson.id)}
-                                className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg border text-left text-xs transition-all ${
-                                  isCurrent
-                                    ? 'bg-cyan-500/20 border-cyan-400 text-white font-bold'
-                                    : 'bg-[#071126] border-sky-900/80 text-sky-200 hover:border-cyan-500/40 hover:text-white'
-                                }`}
-                              >
-                                <span className="truncate">
-                                  Đề ôn #{idx + 1}: {exam.title}
-                                </span>
-                                <span
-                                  className={`px-2 py-0.5 rounded text-[10px] font-black shrink-0 ${
-                                    isCurrent
-                                      ? 'bg-emerald-400 text-[#040817]'
-                                      : 'bg-cyan-500/20 text-cyan-300'
-                                  }`}
-                                >
-                                  {isCurrent ? 'Đang mở' : 'Chọn'}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => setIsLessonCatalogOpen(true)}
-                          className="w-full py-2 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-400/40 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
-                        >
-                          <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
-                          <span>Mở Danh Mục Bài 1 → Bài 27</span>
-                        </button>
-                      </div>
-                    );
-                  })()
-                ) : (
-                  (() => {
-                    const activeTheory =
-                      LESSON_THEORY_CATALOG.find((t) => t.lessonId === selectedLessonId) ||
-                      LESSON_THEORY_CATALOG[0];
-                    return (
-                      <div className="p-3 rounded-xl bg-[#0b1739]/90 border border-amber-500/30 space-y-2">
-                        <div className="flex items-center justify-between text-[11px] font-extrabold text-amber-300">
-                          <span className="truncate">
-                            {activeTheory.name}: {activeTheory.topicTitle}
-                          </span>
-                          <span className="font-mono text-[10px] text-cyan-300 shrink-0 ml-1">
-                            {activeTheory.volume}
-                          </span>
-                        </div>
-                        <div className="text-[10px] text-sky-300">
-                          {activeTheory.chapter} · {activeTheory.pageRange}
-                        </div>
-                        {activeTheory.quickFormulas[0] && (
-                          <div className="p-2 rounded-lg bg-[#050b18] border border-sky-900/80 text-[11px] text-slate-100 overflow-x-auto">
-                            <div className="font-bold text-cyan-300 mb-0.5">
-                              {activeTheory.quickFormulas[0].name}:
-                            </div>
-                            <MathRenderer
-                              content={`$$${activeTheory.quickFormulas[0].expression}$$`}
-                            />
-                          </div>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => setIsTheoryFormulaOpen(true)}
-                          className="w-full py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-400/50 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
-                        >
-                          <BookMarked className="w-3.5 h-3.5 text-amber-400" />
-                          <span>Xem Toàn Bộ Lý Thuyết & Công Thức</span>
-                        </button>
-                      </div>
-                    );
-                  })()
-                )}
-              </div>
-            </div>
           </div>
         </div>
       </main>
@@ -1789,7 +1617,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Lesson Catalog Modal (Mục Bài Học: Bài 1 -> Bài 27 -> Đề ôn) */}
+      {/* Lesson Catalog Modal (Mục Bài Học: Bài 1 -> Bài 27, bên trong mỗi bài có Lý thuyết & 2 Đề ôn) */}
       <LessonCatalogModal
         isOpen={isLessonCatalogOpen}
         onClose={() => setIsLessonCatalogOpen(false)}
@@ -1798,31 +1626,6 @@ export default function App() {
         selectedLessonId={selectedLessonId}
         onSelectLesson={setSelectedLessonId}
         onSelectPracticeExam={handleSelectLessonPracticeExam}
-        onCreatePracticeExamForLesson={(lesson) => {
-          setIsLessonCatalogOpen(false);
-          setTargetLessonForImport(lesson);
-          setIsImportWordOpen(true);
-        }}
-        onDeleteCustomPracticeExam={handleDeleteExam}
-        onOpenTheoryForLesson={(lessonId) => {
-          setSelectedLessonId(lessonId);
-          setIsLessonCatalogOpen(false);
-          setIsTheoryFormulaOpen(true);
-        }}
-      />
-
-      {/* Theory & Formula Catalog Modal (Mục Lý Thuyết Công Thức: Bài 1 -> Bài 27 chuẩn 100% SGK) */}
-      <TheoryFormulaModal
-        isOpen={isTheoryFormulaOpen}
-        onClose={() => setIsTheoryFormulaOpen(false)}
-        theoryList={LESSON_THEORY_CATALOG}
-        selectedLessonId={selectedLessonId}
-        onSelectLesson={setSelectedLessonId}
-        onOpenPracticeForLesson={(lessonId) => {
-          setSelectedLessonId(lessonId);
-          setIsTheoryFormulaOpen(false);
-          setIsLessonCatalogOpen(true);
-        }}
       />
 
       {/* Import Word Modal */}
@@ -1895,7 +1698,7 @@ export default function App() {
               <div className="flex items-center gap-2">
                 <LayoutGrid className="w-4 h-4 text-cyan-400" />
                 <span className="text-sm font-extrabold text-white">
-                  Chuyển Nhanh Câu Hỏi & Tiện Ích
+                  Phiếu Trả Lời Câu Hỏi
                 </span>
               </div>
               <button
@@ -1904,34 +1707,6 @@ export default function App() {
                 className="min-w-[40px] min-h-[40px] rounded-xl bg-[#0b1739] text-sky-300 hover:text-white border border-sky-800 flex items-center justify-center"
               >
                 <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Quick mode switch on mobile */}
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setExamMode((m) => (m === 'exam' ? 'practice' : 'exam'))}
-                className={`min-h-[42px] px-3 py-2 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 ${
-                  examMode === 'exam'
-                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                    : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                }`}
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>{examMode === 'exam' ? 'Chế độ: Thi Tính Giờ' : 'Chế độ: Luyện Tập'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setIsMobileNavOpen(false);
-                  setIsPWAInfoOpen(true);
-                }}
-                className="min-h-[42px] px-3 py-2 rounded-xl text-xs font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/40 flex items-center justify-center gap-1.5"
-              >
-                <Smartphone className="w-3.5 h-3.5" />
-                <span>{isOnline ? 'Cài App Offline' : 'Đang Chạy Offline'}</span>
               </button>
             </div>
 

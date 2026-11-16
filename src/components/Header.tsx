@@ -11,7 +11,6 @@ import {
   WifiOff,
   Smartphone,
   BookOpen,
-  BookMarked,
 } from 'lucide-react';
 import { ExamSet } from '../types/exam';
 import { isAudioEnabled, setAudioEnabled, playClickSound } from '../utils/audio';
@@ -32,7 +31,6 @@ interface HeaderProps {
   onOpenLeaderboard: () => void;
   leaderboardCount: number;
   onOpenLessonCatalog?: () => void;
-  onOpenTheoryFormula?: () => void;
   activeLessonLabel?: string;
   fontSize?: 'normal' | 'large' | 'xlarge';
   onChangeFontSize?: (size: 'normal' | 'large' | 'xlarge') => void;
@@ -55,7 +53,6 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenLeaderboard,
   leaderboardCount,
   onOpenLessonCatalog,
-  onOpenTheoryFormula,
   activeLessonLabel,
   isOnline = true,
   onOpenPWAInfo,
@@ -86,32 +83,19 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Zone 2: Navigation & Quick Tools (Desktop) */}
         <nav className="hidden lg:flex items-center gap-1.5 xl:gap-2 text-xs font-medium text-slate-300 flex-wrap">
-          {/* Mục Bài Học (Bài 1 -> Bài 27 -> Đề ôn) */}
+          {/* Mục Bài Học (Bài 1 -> Bài 27: mỗi bài gồm Lý thuyết & 2 Đề ôn) */}
           {onOpenLessonCatalog && (
             <button
               type="button"
               onClick={onOpenLessonCatalog}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-200 border border-cyan-400/50 hover:from-cyan-500/30 hover:to-blue-500/30 hover:text-white transition-all whitespace-nowrap font-bold shadow-xs"
-              title="Mở mục Bài Học (Bài 1, Bài 2, ..., Bài 27 -> Đề ôn)"
+              title="Mở mục Bài Học (Bài 1 -> Bài 27: Lý thuyết & 2 Đề ôn)"
             >
               <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
               <span>Bài Học</span>
               <span className="px-1.5 py-0.2 rounded-full bg-cyan-400/20 text-cyan-200 text-[10px] font-mono">
                 {activeLessonLabel || '1–27'}
               </span>
-            </button>
-          )}
-
-          {/* Mục Lý Thuyết Công Thức (Bài 1 -> Bài 27 chuẩn 100% SGK) */}
-          {onOpenTheoryFormula && (
-            <button
-              type="button"
-              onClick={onOpenTheoryFormula}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-200 border border-amber-400/50 hover:from-amber-500/30 hover:to-orange-500/30 hover:text-white transition-all whitespace-nowrap font-bold shadow-xs"
-              title="Mở mục Lý Thuyết Công Thức (Bài 1 -> Bài 27 chuẩn 100% SGK Toán 10)"
-            >
-              <BookMarked className="w-3.5 h-3.5 text-amber-400" />
-              <span>Lý Thuyết Công Thức</span>
             </button>
           )}
 
@@ -217,23 +201,10 @@ export const Header: React.FC<HeaderProps> = ({
                 type="button"
                 onClick={onOpenLessonCatalog}
                 className="min-h-[38px] px-2.5 py-1.5 flex items-center gap-1 rounded-xl bg-cyan-500/20 border border-cyan-400/50 text-cyan-200 hover:bg-cyan-500/30 text-xs font-bold whitespace-nowrap"
-                title="Mục Bài Học (Bài 1 -> Bài 27 -> Đề ôn)"
+                title="Mục Bài Học (Bài 1 -> Bài 27: Lý thuyết & 2 Đề ôn)"
               >
                 <BookOpen className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
                 <span>Bài Học</span>
-              </button>
-            )}
-
-            {onOpenTheoryFormula && (
-              <button
-                type="button"
-                onClick={onOpenTheoryFormula}
-                className="min-h-[38px] px-2.5 py-1.5 flex items-center gap-1 rounded-xl bg-amber-500/20 border border-amber-400/50 text-amber-200 hover:bg-amber-500/30 text-xs font-bold whitespace-nowrap"
-                title="Mục Lý Thuyết Công Thức (Bài 1 -> Bài 27 chuẩn SGK)"
-              >
-                <BookMarked className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span className="hidden xs:inline">Lý Thuyết</span>
-                <span className="xs:hidden">LT</span>
               </button>
             )}
 
