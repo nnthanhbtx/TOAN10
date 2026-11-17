@@ -87,8 +87,8 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-2.5 sm:p-5 overflow-y-auto animate-fadeIn">
-      <div className="bg-[#071126] border border-sky-800/80 rounded-2xl max-w-6xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden text-white">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-2 sm:p-5 overflow-y-auto animate-fadeIn">
+      <div className="bg-[#071126] border border-sky-800/80 rounded-2xl max-w-6xl w-full max-h-[92dvh] flex flex-col shadow-2xl overflow-hidden text-white">
         {/* Top Header */}
         <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3.5 sm:py-4 bg-gradient-to-r from-[#091534] via-[#0c1d47] to-[#091534] border-b border-sky-800/70">
           <div className="flex items-center gap-3 min-w-0">
@@ -97,19 +97,16 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
             </div>
             <div className="min-w-0">
               <h2 className="text-base sm:text-xl font-extrabold text-white tracking-tight truncate">
-                Mục Bài Học Toán 10 (Bài 1 – Bài {lessons.length})
+                Bài Học Toán 10 (Bài 1 – Bài {lessons.length})
               </h2>
-              <p className="text-xs text-sky-300 mt-0.5 truncate sm:whitespace-normal">
-                Mỗi bài học gồm <strong className="text-amber-300">Mục Lý thuyết</strong> chuẩn SGK và <strong className="text-cyan-300">2 Đề ôn</strong> (22 câu / đề)
-              </p>
             </div>
           </div>
 
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl bg-[#0b1739] hover:bg-sky-900 text-sky-300 hover:text-white border border-sky-800 transition-colors shrink-0"
-            title="Đóng mục Bài học"
+            className="min-w-[40px] min-h-[40px] p-2 rounded-xl bg-[#0b1739] hover:bg-sky-900 text-sky-300 hover:text-white border border-sky-800 transition-colors flex items-center justify-center shrink-0"
+            title="Đóng"
           >
             <X className="w-5 h-5" />
           </button>
@@ -117,8 +114,8 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
 
         {/* Main Body: Left Tree (Bài 1 -> Bài 27) & Right Content (Lý thuyết | 2 Đề ôn) */}
         <div className="flex-1 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-sky-900/70">
-          {/* Cột Trái: Danh sách Bài 1 -> Bài 27, bên trong mỗi bài có Mục Lý thuyết & 2 Đề ôn */}
-          <div className="lg:col-span-4 xl:col-span-4 p-3 sm:p-4 bg-[#060e21] overflow-y-auto max-h-[42vh] lg:max-h-[78vh] space-y-2.5">
+          {/* Cột Trái: Danh sách Bài 1 -> Bài 27, bên trong mỗi bài có Lý thuyết & 2 Đề ôn */}
+          <div className="lg:col-span-4 xl:col-span-4 p-3 sm:p-4 bg-[#060e21] overflow-y-auto max-h-[40dvh] lg:max-h-[78dvh] space-y-2.5">
             {/* Tìm kiếm & Lọc Tập 1 / Tập 2 */}
             <div className="space-y-2 sticky top-0 bg-[#060e21] pb-2 z-10 border-b border-sky-900/60">
               <div className="relative">
@@ -128,7 +125,7 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Tìm nhanh Bài 1 -> Bài 27..."
-                  className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-[#0b1739] border border-sky-800/80 text-xs text-white placeholder-sky-400/60 focus:outline-none focus:border-cyan-400"
+                  className="w-full pl-8 pr-3 py-2 rounded-xl bg-[#0b1739] border border-sky-800/80 text-xs text-white placeholder-sky-400/60 focus:outline-none focus:border-cyan-400"
                 />
               </div>
               <div className="grid grid-cols-3 gap-1.5">
@@ -137,7 +134,7 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
                     key={vol}
                     type="button"
                     onClick={() => setVolumeFilter(vol)}
-                    className={`py-1 px-2 rounded-lg text-[11px] font-bold border transition-all ${
+                    className={`py-1.5 px-2 rounded-lg text-[11px] font-bold border transition-all ${
                       volumeFilter === vol
                         ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200'
                         : 'bg-[#0b1739] border-sky-900 text-sky-300 hover:text-white'
@@ -197,10 +194,10 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
                       )}
                     </button>
 
-                    {/* Bên trong mỗi Bài học: 1. Mục Lý thuyết & 2. Hai Đề ôn */}
+                    {/* Bên trong mỗi Bài học: 1. Lý thuyết & 2. Hai Đề ôn */}
                     {isExpanded && (
                       <div className="px-3 pb-3 pt-2 bg-[#050b1a]/95 border-t border-sky-900/60 space-y-1.5">
-                        {/* 1. Mục Lý thuyết */}
+                        {/* 1. Lý thuyết */}
                         <button
                           type="button"
                           onClick={() => {
@@ -215,7 +212,7 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
                         >
                           <div className="flex items-center gap-2 min-w-0">
                             <BookMarked className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                            <span className="truncate">Mục: Lý thuyết ({lesson.name})</span>
+                            <span className="truncate">Lý thuyết ({lesson.name})</span>
                           </div>
                           <span className="px-2 py-0.5 rounded bg-amber-400/20 text-amber-200 text-[10px] font-bold shrink-0">
                             Xem
@@ -274,10 +271,10 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
             </div>
           </div>
 
-          {/* Cột Phải: Nội dung chi tiết của Bài học đang chọn (Chuyển đổi giữa Mục Lý thuyết & 2 Đề ôn) */}
-          <div className="lg:col-span-8 xl:col-span-8 p-4 sm:p-6 space-y-5 overflow-y-auto max-h-[78vh]">
-            {/* Header Bài học + Thanh chọn Mục Lý thuyết / 2 Đề ôn */}
-            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-[#0b1739] via-[#091430] to-[#071126] border border-cyan-500/40 space-y-3.5 shadow-lg">
+          {/* Cột Phải: Nội dung chi tiết của Bài học đang chọn (Lý thuyết | 2 Đề ôn) */}
+          <div className="lg:col-span-8 xl:col-span-8 p-3.5 sm:p-6 space-y-4 overflow-y-auto max-h-[78dvh]">
+            {/* Header Bài học + Thanh chọn Lý thuyết / 2 Đề ôn */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-[#0b1739] via-[#091430] to-[#071126] border border-cyan-500/40 space-y-3 shadow-lg">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="px-3 py-1 rounded-xl bg-cyan-500 text-[#040817] font-mono text-xs sm:text-sm font-black">
@@ -286,11 +283,6 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
                   <span className="px-2.5 py-1 rounded-xl bg-[#071126] border border-sky-800 text-sky-300 text-xs font-semibold">
                     {activeLesson.chapter}
                   </span>
-                  {activeTheory && (
-                    <span className="px-2.5 py-1 rounded-xl bg-[#071126] border border-sky-800 text-amber-300 text-xs font-mono">
-                      {activeTheory.volume} · {activeTheory.pageRange}
-                    </span>
-                  )}
                 </div>
               </div>
 
@@ -298,37 +290,37 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
                 {activeLesson.name}: {activeLesson.topicTitle}
               </h3>
 
-              {/* 2 Mục bên trong Bài học: 1. Mục Lý thuyết | 2. Mục 2 Đề ôn */}
+              {/* 2 phần bên trong Bài học: 1. Lý thuyết | 2. 2 Đề ôn */}
               <div className="grid grid-cols-2 gap-2 pt-1">
                 <button
                   type="button"
                   onClick={() => setActiveSubSection('theory')}
-                  className={`py-2.5 px-4 rounded-xl text-xs sm:text-sm font-extrabold border transition-all flex items-center justify-center gap-2 ${
+                  className={`min-h-[42px] py-2.5 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-extrabold border transition-all flex items-center justify-center gap-2 ${
                     activeSubSection === 'theory'
                       ? 'bg-amber-400 text-[#040817] border-amber-300 shadow-md'
                       : 'bg-[#071126] text-amber-300 border-sky-800 hover:border-amber-400/50'
                   }`}
                 >
-                  <BookMarked className="w-4 h-4" />
-                  <span>Mục: Lý Thuyết ({activeLesson.name})</span>
+                  <BookMarked className="w-4 h-4 shrink-0" />
+                  <span>Lý Thuyết ({activeLesson.name})</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setActiveSubSection('exams')}
-                  className={`py-2.5 px-4 rounded-xl text-xs sm:text-sm font-extrabold border transition-all flex items-center justify-center gap-2 ${
+                  className={`min-h-[42px] py-2.5 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-extrabold border transition-all flex items-center justify-center gap-2 ${
                     activeSubSection === 'exams'
                       ? 'bg-cyan-400 text-[#040817] border-cyan-300 shadow-md'
                       : 'bg-[#071126] text-cyan-300 border-sky-800 hover:border-cyan-400/50'
                   }`}
                 >
-                  <FileText className="w-4 h-4" />
-                  <span>Mục: 2 Đề Ôn ({activeLesson.name})</span>
+                  <FileText className="w-4 h-4 shrink-0" />
+                  <span>2 Đề Ôn ({activeLesson.name})</span>
                 </button>
               </div>
             </div>
 
-            {/* NỘI DUNG MỤC 1: LÝ THUYẾT CỦA BÀI HỌC */}
+            {/* NỘI DUNG 1: LÝ THUYẾT CỦA BÀI HỌC */}
             {activeSubSection === 'theory' && activeTheory && (
               <div className="space-y-5 animate-fadeIn">
                 {/* Thuật ngữ & Yêu cầu cần đạt */}
@@ -405,7 +397,7 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
                   </div>
                 </div>
 
-                {/* Chi tiết từng mục lý thuyết trong bài học SGK */}
+                {/* Chi tiết lý thuyết theo SGK */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 border-b border-cyan-500/30 pb-2">
                     <div className="w-7 h-7 rounded-lg bg-cyan-500/20 border border-cyan-400/50 flex items-center justify-center text-cyan-300">
@@ -472,16 +464,9 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
               </div>
             )}
 
-            {/* NỘI DUNG MỤC 2: 2 ĐỀ ÔN CỦA BÀI HỌC */}
+            {/* NỘI DUNG 2: 2 ĐỀ ÔN CỦA BÀI HỌC */}
             {activeSubSection === 'exams' && (
-              <div className="space-y-4 animate-fadeIn">
-                <div className="p-3.5 rounded-xl bg-[#060e21]/90 border border-sky-900/80 text-xs sm:text-sm text-sky-100 leading-relaxed">
-                  <span className="font-bold text-amber-300 mr-1.5">
-                    Tóm tắt trọng tâm {activeLesson.name}:
-                  </span>
-                  <MathRenderer content={activeLesson.keySummary} />
-                </div>
-
+              <div className="space-y-3.5 animate-fadeIn">
                 <div className="grid grid-cols-1 gap-3.5">
                   {practiceExamsTwo.map((exam, idx) => {
                     const totalQ =
@@ -500,7 +485,7 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
                             : 'bg-[#0b1739] border-sky-800/70 hover:border-cyan-400/50 shadow-md'
                         }`}
                       >
-                        <div className="space-y-1.5 min-w-0 flex-1">
+                        <div className="space-y-2 min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-400/40 text-xs font-extrabold">
                               <FileText className="w-3.5 h-3.5" />
@@ -517,11 +502,7 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
                             )}
                           </div>
 
-                          <p className="text-xs text-sky-200/90 leading-relaxed">
-                            {exam.subtitle || exam.description}
-                          </p>
-
-                          <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-sky-300 font-semibold">
+                          <div className="flex flex-wrap items-center gap-2 text-[11px] text-sky-300 font-semibold">
                             <span className="px-2 py-0.5 rounded-md bg-[#071126] border border-sky-900">
                               Tổng: {totalQ} câu hỏi
                             </span>
@@ -551,7 +532,7 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
                             onSelectPracticeExam(exam, activeLesson.id);
                             onClose();
                           }}
-                          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 to-teal-300 hover:from-cyan-300 hover:to-teal-200 text-[#040817] font-black text-xs sm:text-sm shadow-md transition-all active:scale-95 shrink-0"
+                          className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 to-teal-300 hover:from-cyan-300 hover:to-teal-200 text-[#040817] font-black text-xs sm:text-sm shadow-md transition-all active:scale-95 shrink-0"
                         >
                           <Play className="w-4 h-4 fill-current" />
                           <span>Làm Đề Ôn Số {idx + 1}</span>

@@ -127,8 +127,9 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({
             <li className="flex items-start gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
               <span>
-                <strong>Giao diện câu hỏi to, rõ, vừa khít màn hình:</strong> Tối ưu cho mọi màn
-                hình iPhone, Samsung, Xiaomi, OPPO, Vivo; có thanh chọn câu hỏi nhanh ở đáy màn hình.
+                <strong>Tương thích hoàn hảo iPhone 10 đến iPhone 18 & Android:</strong> Tự động căn
+                chỉnh vùng an toàn (Tai thỏ / Dynamic Island / Thanh vuốt Home), chống tự động
+                phóng to khi nhập đáp án và tích hợp thanh chọn câu hỏi nhanh ở đáy màn hình.
               </span>
             </li>
           </ul>

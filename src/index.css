@@ -11,6 +11,23 @@
     overflow-x: hidden;
     text-size-adjust: 100%;
     -webkit-text-size-adjust: 100%;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: none;
+  }
+
+  button,
+  select,
+  input,
+  textarea {
+    touch-action: manipulation;
+  }
+}
+
+/* Chống tự động phóng to (auto-zoom) trên iOS Safari (iPhone 10 -> iPhone 18) khi học sinh chạm vào ô nhập đáp án */
+@supports (-webkit-touch-callout: none) {
+  input,
+  textarea {
+    font-size: max(16px, 1em);
   }
 }
 
@@ -50,9 +67,13 @@
   -webkit-overflow-scrolling: touch;
 }
 
-/* Hỗ trợ tai thỏ / thanh điều hướng đáy màn hình điện thoại đời mới (iPhone 14/15/16, Android) */
+/* Hỗ trợ tai thỏ (Notch), Dynamic Island và thanh Home Indicator đáy màn hình từ iPhone 10 (iPhone X) đến iPhone 18 & Android */
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
 .pb-safe {
-  padding-bottom: env(safe-area-inset-bottom, 0.5rem);
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0.5rem));
 }
 
 /* Ẩn thanh cuộn rườm rà trên các thanh tab ngang ở điện thoại */
@@ -76,4 +97,3 @@
     color: black !important;
   }
 }
-

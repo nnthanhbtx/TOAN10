@@ -501,8 +501,8 @@ export default function App() {
     // 3. Phát hiện chia đôi màn hình (Split-screen) hoặc thu nhỏ góc trình duyệt để tra cứu AI
     const handleViewportResize = () => {
       const activeTag = document.activeElement?.tagName;
-      // Bỏ qua khi bàn phím ảo điện thoại bật lên lúc đang gõ ô trả lời ngắn (INPUT / TEXTAREA)
-      if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') {
+      // Bỏ qua khi bàn phím ảo hoặc vòng chọn trên iPhone / Android bật lên lúc đang nhập (INPUT / TEXTAREA / SELECT)
+      if (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT') {
         return;
       }
 
@@ -512,9 +512,15 @@ export default function App() {
       const curW = window.innerWidth;
       const curH = window.innerHeight;
 
-      // Nếu chiều rộng hoặc chiều cao bị thu hẹp bất thường (> 18%) so với lúc bắt đầu làm bài
-      const widthShrunk = base.width - curW > Math.max(90, base.width * 0.18);
-      const heightShrunk = base.height - curH > Math.max(140, base.height * 0.22);
+      // Trên iPhone 10 -> iPhone 18 (iOS Safari), thanh địa chỉ tự thu gọn làm tăng curH khi vuốt cuộn
+      if (curW === base.width && curH > base.height) {
+        baselineViewportRef.current = { width: curW, height: curH };
+        return;
+      }
+
+      // Nếu chiều rộng hoặc chiều cao bị thu hẹp bất thường (chia đôi màn hình / cửa sổ nổi)
+      const widthShrunk = base.width - curW > Math.max(95, base.width * 0.2);
+      const heightShrunk = base.height - curH > Math.max(190, base.height * 0.28);
 
       if (widthShrunk || heightShrunk) {
         recordViolation(
@@ -844,7 +850,7 @@ export default function App() {
   }, [answers, currentExam, interactedPart4, isSubmitted]);
 
   return (
-    <div className="min-h-screen bg-[#040817] text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950">
+    <div className="min-h-screen min-h-dvh bg-[#040817] text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950">
       {/* Header */}
       <Header
         currentExam={currentExam}
@@ -994,7 +1000,7 @@ export default function App() {
                   />
                 )}
 
-                {/* Mục Báo Vi Phạm: Ẩn trước khi thi, CHỈ xuất hiện khi học sinh đã nhấn Bắt Đầu Làm Bài */}
+                {/* Báo Vi Phạm: Ẩn trước khi thi, CHỈ xuất hiện khi học sinh đã nhấn Bắt Đầu Làm Bài */}
                 {isExamStarted && (
                   <button
                     type="button"
@@ -1006,7 +1012,7 @@ export default function App() {
                         ? 'bg-[#0b1739] border-emerald-500/40 text-emerald-300 hover:bg-sky-950'
                         : 'bg-[#071126] border-sky-900/70 text-sky-300 hover:text-white'
                     }`}
-                    title="Mục báo vi phạm khi học sinh mở tab khác, khóa màn hình hoặc che góc màn hình dùng AI giải bài"
+                    title="Báo vi phạm khi học sinh mở tab khác, khóa màn hình hoặc che góc màn hình dùng AI giải bài"
                   >
                     {violations.length > 0 ? (
                       <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0" />
@@ -1506,7 +1512,7 @@ export default function App() {
                 </div>
                 <div>
                   <h3 className="text-base font-extrabold text-white">
-                    Mục Báo Vi Phạm & Giám Sát Phòng Thi
+                    Báo Vi Phạm & Giám Sát Phòng Thi
                   </h3>
                   <p className="text-xs text-sky-300">
                     Tự động phát hiện chuyển tab, khóa màn hình hoặc che góc màn hình dùng AI

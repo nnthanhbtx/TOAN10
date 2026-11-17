@@ -178,11 +178,11 @@ export const Part4StepOrdering: React.FC<Part4StepOrderingProps> = ({
                 />
               )}
 
-              {/* Conclusion Target (Mục tiêu kết luận) */}
+              {/* Conclusion Target */}
               <div className="mt-3.5 p-3.5 rounded-xl bg-cyan-950/40 border border-cyan-800/50 flex items-start gap-2.5 text-cyan-200">
                 <Sparkles className="w-4 h-4 text-cyan-300 shrink-0 mt-0.5" />
                 <div className="text-sm sm:text-base font-medium font-times">
-                  <span className="font-bold text-cyan-300">Mục tiêu kết luận: </span>
+                  <span className="font-bold text-cyan-300">Yêu cầu kết luận: </span>
                   <MathRenderer content={q.conclusionTarget} />
                 </div>
               </div>

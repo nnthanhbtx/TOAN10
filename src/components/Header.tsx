@@ -67,7 +67,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-[#070f24]/95 backdrop-blur-md border-b border-sky-950 text-white shadow-lg">
+    <header className="sticky top-0 z-40 bg-[#070f24]/95 backdrop-blur-md border-b border-sky-950 text-white shadow-lg pt-safe">
       <div className="max-w-7xl mx-auto px-2.5 sm:px-6 py-2 sm:py-3 flex items-center justify-between gap-2 md:gap-4">
         {/* Zone 1: Brand Wordmark */}
         <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
@@ -83,13 +83,13 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Zone 2: Navigation & Quick Tools (Desktop) */}
         <nav className="hidden lg:flex items-center gap-1.5 xl:gap-2 text-xs font-medium text-slate-300 flex-wrap">
-          {/* Mục Bài Học (Bài 1 -> Bài 27: mỗi bài gồm Lý thuyết & 2 Đề ôn) */}
+          {/* Bài Học (Bài 1 -> Bài 27: mỗi bài gồm Lý thuyết & 2 Đề ôn) */}
           {onOpenLessonCatalog && (
             <button
               type="button"
               onClick={onOpenLessonCatalog}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-200 border border-cyan-400/50 hover:from-cyan-500/30 hover:to-blue-500/30 hover:text-white transition-all whitespace-nowrap font-bold shadow-xs"
-              title="Mở mục Bài Học (Bài 1 -> Bài 27: Lý thuyết & 2 Đề ôn)"
+              title="Bài Học (Bài 1 -> Bài 27: Lý thuyết & 2 Đề ôn)"
             >
               <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
               <span>Bài Học</span>
@@ -180,7 +180,7 @@ export const Header: React.FC<HeaderProps> = ({
                   ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25'
                   : 'bg-amber-500/20 text-amber-300 border-amber-400/60 animate-pulse'
               }`}
-              title="Chế độ Điện thoại & Hoạt động không cần Wi-Fi"
+              title="Chế độ Điện thoại (iPhone 10 - iPhone 18 & Android) & Hoạt động không cần Wi-Fi"
             >
               {isOnline ? (
                 <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
@@ -201,7 +201,7 @@ export const Header: React.FC<HeaderProps> = ({
                 type="button"
                 onClick={onOpenLessonCatalog}
                 className="min-h-[38px] px-2.5 py-1.5 flex items-center gap-1 rounded-xl bg-cyan-500/20 border border-cyan-400/50 text-cyan-200 hover:bg-cyan-500/30 text-xs font-bold whitespace-nowrap"
-                title="Mục Bài Học (Bài 1 -> Bài 27: Lý thuyết & 2 Đề ôn)"
+                title="Bài Học (Bài 1 -> Bài 27: Lý thuyết & 2 Đề ôn)"
               >
                 <BookOpen className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
                 <span>Bài Học</span>

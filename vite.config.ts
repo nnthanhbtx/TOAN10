@@ -16,7 +16,8 @@ export default defineConfig(() => {
       VitePWA({
         registerType: 'autoUpdate',
         devOptions: {
-          enabled: false,
+          enabled: true,
+          type: 'module',
         },
         includeAssets: [
           'icon.svg',
@@ -30,7 +31,7 @@ export default defineConfig(() => {
           name: 'Khảo Thí Toán 10 - Hệ Thống Đánh Giá Năng Lực',
           short_name: 'Toán 10',
           description:
-            'Ứng dụng kiểm tra và đánh giá năng lực môn Toán lớp 10 chuẩn cấu trúc 4 phần, hoạt động mượt mà kể cả khi không có Wi-Fi.',
+            'Ứng dụng kiểm tra và đánh giá năng lực môn Toán lớp 10 chuẩn cấu trúc 4 phần, hoạt động mượt mà kể cả khi không có Wi-Fi trên iPhone 10 đến iPhone 18 và Android.',
           theme_color: '#040817',
           background_color: '#040817',
           display: 'standalone',
@@ -66,7 +67,7 @@ export default defineConfig(() => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,ttf}'],
-          maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
+          maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
           cleanupOutdatedCaches: true,
           clientsClaim: true,
           skipWaiting: true,
