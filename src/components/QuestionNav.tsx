@@ -16,7 +16,7 @@ interface QuestionNavProps {
   onEditStudentInfo?: () => void;
 }
 
-export const QuestionNav: React.FC<QuestionNavProps> = ({
+export const QuestionNav: React.FC<QuestionNavProps> = React.memo(({
   exam,
   answers,
   onNavigate,
@@ -87,7 +87,7 @@ export const QuestionNav: React.FC<QuestionNavProps> = ({
           <button
             type="button"
             onClick={onEditStudentInfo}
-            className="px-2 py-1 rounded-lg bg-[#071126] hover:bg-sky-900 text-cyan-300 border border-sky-800 text-[11px] font-semibold shrink-0 transition-colors"
+            className="px-2.5 py-1.5 rounded-lg bg-[#071126] hover:bg-sky-900 text-cyan-300 border border-sky-800 text-[11px] font-semibold shrink-0 touch-manipulation select-none active:scale-95"
           >
             {studentName && studentName.trim() ? 'Sửa' : 'Điền tên'}
           </button>
@@ -129,8 +129,9 @@ export const QuestionNav: React.FC<QuestionNavProps> = ({
             return (
               <button
                 key={q.id}
+                type="button"
                 onClick={() => onNavigate('part1', idx)}
-                className={`relative h-10 sm:h-8 rounded-xl text-sm sm:text-xs font-bold transition-all flex items-center justify-center active:scale-95 ${
+                className={`relative h-11 sm:h-8 rounded-xl text-sm sm:text-xs font-bold touch-manipulation select-none transition-transform duration-75 flex items-center justify-center active:scale-95 ${
                   answered
                     ? 'bg-cyan-500 text-[#071126] font-black shadow-md hover:bg-cyan-400'
                     : 'bg-[#0b1739] text-sky-200 hover:bg-[#122557] border border-sky-800/60'
@@ -165,8 +166,9 @@ export const QuestionNav: React.FC<QuestionNavProps> = ({
             return (
               <button
                 key={q.id}
+                type="button"
                 onClick={() => onNavigate('part2', idx)}
-                className={`relative h-10 sm:h-8 rounded-xl text-sm sm:text-xs font-bold transition-all flex flex-col items-center justify-center active:scale-95 ${
+                className={`relative h-11 sm:h-8 rounded-xl text-sm sm:text-xs font-bold touch-manipulation select-none transition-transform duration-75 flex flex-col items-center justify-center active:scale-95 ${
                   isFull
                     ? 'bg-cyan-500 text-[#071126] font-black shadow-md hover:bg-cyan-400'
                     : count > 0
@@ -200,8 +202,9 @@ export const QuestionNav: React.FC<QuestionNavProps> = ({
             return (
               <button
                 key={q.id}
+                type="button"
                 onClick={() => onNavigate('part3', idx)}
-                className={`relative h-10 sm:h-8 rounded-xl text-sm sm:text-xs font-bold transition-all flex items-center justify-center active:scale-95 ${
+                className={`relative h-11 sm:h-8 rounded-xl text-sm sm:text-xs font-bold touch-manipulation select-none transition-transform duration-75 flex items-center justify-center active:scale-95 ${
                   answered
                     ? 'bg-cyan-500 text-[#071126] font-black shadow-md hover:bg-cyan-400'
                     : 'bg-[#0b1739] text-sky-200 hover:bg-[#122557] border border-sky-800/60'
@@ -234,8 +237,9 @@ export const QuestionNav: React.FC<QuestionNavProps> = ({
               return (
                 <button
                   key={q.id}
+                  type="button"
                   onClick={() => onNavigate('part4', idx)}
-                  className={`relative h-10 sm:h-8 rounded-xl text-sm sm:text-xs font-bold transition-all flex flex-col items-center justify-center active:scale-95 ${
+                  className={`relative h-11 sm:h-8 rounded-xl text-sm sm:text-xs font-bold touch-manipulation select-none transition-transform duration-75 flex flex-col items-center justify-center active:scale-95 ${
                     answered
                       ? 'bg-cyan-500 text-[#071126] font-black shadow-md hover:bg-cyan-400'
                       : 'bg-[#0b1739] text-sky-200 hover:bg-[#122557] border border-sky-800/60'
@@ -276,4 +280,5 @@ export const QuestionNav: React.FC<QuestionNavProps> = ({
       </div>
     </div>
   );
-};
+});
+

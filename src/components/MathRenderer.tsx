@@ -164,7 +164,28 @@ function preprocessRawMathContent(input: string): string {
   return s;
 }
 
-export const MathRenderer: React.FC<MathRendererProps> = ({
+const katexHtmlCache = new Map<string, string>();
+
+function renderLatexCached(cleanMath: string, isDisplay: boolean): string {
+  const cacheKey = `${isDisplay ? 'D:' : 'I:'}${cleanMath}`;
+  const cached = katexHtmlCache.get(cacheKey);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const html = katex.renderToString(cleanMath, {
+    displayMode: isDisplay,
+    throwOnError: false,
+    errorColor: 'currentColor',
+    strict: false,
+    trust: true,
+    macros: KATEX_MACROS,
+    output: 'htmlAndMathml',
+  });
+  katexHtmlCache.set(cacheKey, html);
+  return html;
+}
+
+export const MathRenderer: React.FC<MathRendererProps> = React.memo(({
   content,
   className = '',
 }) => {
@@ -267,15 +288,7 @@ export const MathRenderer: React.FC<MathRendererProps> = ({
         const cleanMath = sanitizeLatexFormula(part.value);
 
         try {
-          const html = katex.renderToString(cleanMath, {
-            displayMode: isDisplay,
-            throwOnError: false,
-            errorColor: 'currentColor',
-            strict: false,
-            trust: true,
-            macros: KATEX_MACROS,
-            output: 'htmlAndMathml',
-          });
+          const html = renderLatexCached(cleanMath, isDisplay);
 
           return isDisplay ? (
             <span
@@ -303,5 +316,6 @@ export const MathRenderer: React.FC<MathRendererProps> = ({
       })}
     </span>
   );
-};
+});
+
 

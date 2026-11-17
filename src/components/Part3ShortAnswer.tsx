@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   XCircle,
   Sparkles,
+  Delete,
 } from 'lucide-react';
 import {
   playAnswerFeedbackSound,
@@ -24,7 +25,7 @@ interface Part3ShortAnswerProps {
   totalQuestions?: number;
 }
 
-export const Part3ShortAnswer: React.FC<Part3ShortAnswerProps> = ({
+export const Part3ShortAnswer: React.FC<Part3ShortAnswerProps> = React.memo(({
   questions,
   answers,
   onAnswerChange,
@@ -73,6 +74,16 @@ export const Part3ShortAnswer: React.FC<Part3ShortAnswerProps> = ({
     });
   };
 
+  const clearCheckedForQuestion = (qId: string) => {
+    if (checkedStatus[qId] !== undefined) {
+      setCheckedStatus((prev) => {
+        const next = { ...prev };
+        delete next[qId];
+        return next;
+      });
+    }
+  };
+
   // Kiểm tra đáp số và phát âm thanh đúng/sai
   const handleCheckAnswer = (q: ShortAnswerQuestion) => {
     const userVal = answers[q.id] || '';
@@ -81,6 +92,33 @@ export const Part3ShortAnswer: React.FC<Part3ShortAnswerProps> = ({
     const isCorrect = checkIsCorrect(q, userVal);
     setCheckedStatus((prev) => ({ ...prev, [q.id]: isCorrect }));
     playAnswerFeedbackSound(isCorrect);
+  };
+
+  // Hỗ trợ thao tác 1 chạm cho bàn phím số iPhone 10 -> iPhone 18 (vốn thiếu nút dấu trừ '-' và '/')
+  const handleToggleMinus = (qId: string) => {
+    if (isSubmitted) return;
+    playClickSound();
+    const cur = (answers[qId] || '').trim();
+    const nextVal = cur.startsWith('-') ? cur.slice(1) : `-${cur}`;
+    onAnswerChange(qId, nextVal);
+    clearCheckedForQuestion(qId);
+  };
+
+  const handleAppendChar = (qId: string, char: string) => {
+    if (isSubmitted) return;
+    playClickSound();
+    const cur = answers[qId] || '';
+    if ((char === '.' || char === '/') && cur.includes(char)) return;
+    const nextVal = `${cur}${char}`;
+    onAnswerChange(qId, nextVal);
+    clearCheckedForQuestion(qId);
+  };
+
+  const handleClearInput = (qId: string) => {
+    if (isSubmitted) return;
+    playClickSound();
+    onAnswerChange(qId, '');
+    clearCheckedForQuestion(qId);
   };
 
   return (
@@ -92,7 +130,7 @@ export const Part3ShortAnswer: React.FC<Part3ShortAnswerProps> = ({
         const showSolution = isSubmitted || examMode === 'practice' || hasChecked;
 
         return (
-          <div key={q.id} id={`q-part3-${idx}`} className="space-y-3 transition-all scroll-mt-20">
+          <div key={q.id} id={`q-part3-${idx}`} className="space-y-3 scroll-mt-24">
             {/* Top Question Card (Màu xanh đậm, chữ trắng to nổi bật) */}
             <div className="rounded-2xl border border-sky-900/60 bg-[#071126] p-3.5 sm:p-6 md:p-7 shadow-2xl">
               {/* Header with Pills */}
@@ -157,33 +195,31 @@ export const Part3ShortAnswer: React.FC<Part3ShortAnswerProps> = ({
               )}
             </div>
 
-            {/* Answer Input Area (Khung nhập đáp số nền xanh sẫm với chữ lớn) */}
-            <div className="rounded-2xl border border-sky-900/60 bg-[#071026] p-3.5 sm:p-6 shadow-2xl space-y-4">
+            {/* Answer Input Area (Khung nhập đáp số nền xanh sẫm với chữ lớn + phím hỗ trợ nhanh cho iPhone) */}
+            <div className="rounded-2xl border border-sky-900/60 bg-[#071026] p-3.5 sm:p-6 shadow-2xl space-y-3">
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-wrap">
                 <div className="relative flex-1 sm:max-w-md">
                   <input
                     type="text"
                     inputMode="decimal"
+                    enterKeyHint="done"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    spellCheck={false}
                     disabled={isSubmitted}
                     value={userVal}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
+                        e.currentTarget.blur();
                         handleCheckAnswer(q);
                       }
                     }}
                     onChange={(e) => {
-                      playClickSound();
                       onAnswerChange(q.id, e.target.value);
-                      if (checkedStatus[q.id] !== undefined) {
-                        setCheckedStatus((prev) => {
-                          const next = { ...prev };
-                          delete next[q.id];
-                          return next;
-                        });
-                      }
+                      clearCheckedForQuestion(q.id);
                     }}
                     placeholder="Nhập kết quả số (VD: -3, 2.5)..."
-                    className={`w-full min-h-[52px] px-4 sm:px-5 py-3 rounded-2xl border text-lg sm:text-2xl font-mono font-black tracking-wider transition-all focus:outline-none ${
+                    className={`w-full min-h-[52px] px-4 sm:px-5 py-3 rounded-2xl border text-lg sm:text-2xl font-mono font-black tracking-wider focus:outline-none ${
                       showSolution && userVal
                         ? isCorrect
                           ? 'bg-emerald-950/70 border-2 border-emerald-400 text-emerald-200'
@@ -208,15 +244,58 @@ export const Part3ShortAnswer: React.FC<Part3ShortAnswerProps> = ({
                     type="button"
                     onClick={() => handleCheckAnswer(q)}
                     disabled={!userVal.trim()}
-                    className="min-h-[48px] flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-cyan-600 hover:bg-cyan-500 text-white font-extrabold text-sm sm:text-base transition-all shadow-lg shadow-cyan-950/60 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="min-h-[48px] flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-cyan-600 hover:bg-cyan-500 text-white font-extrabold text-sm sm:text-base touch-manipulation select-none transition-transform duration-75 shadow-lg shadow-cyan-950/60 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
                     title="Kiểm tra đáp số và nghe âm thanh Đúng/Sai"
                   >
                     <Sparkles className="w-4 h-4 text-cyan-200" />
                     <span>Kiểm tra đáp số</span>
                   </button>
                 )}
-
               </div>
+
+              {/* Thanh phím tắt nhập nhanh cho iPhone 10 -> iPhone 18 & Android (nhập dấu âm -, dấu chấm ., phân số /, xoá nhanh) */}
+              {!isSubmitted && (
+                <div className="flex items-center gap-2 flex-wrap pt-0.5">
+                  <span className="text-[11px] font-semibold text-sky-400 mr-0.5">
+                    Phím nhanh:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleMinus(q.id)}
+                    className="min-h-[40px] px-3.5 py-1.5 rounded-xl bg-[#0b1739] hover:bg-sky-900 border border-sky-700/80 text-amber-300 font-mono font-black text-sm touch-manipulation select-none active:scale-95 transition-transform duration-75"
+                    title="Đổi dấu Âm / Dương (-/+)"
+                  >
+                    ± Âm (-)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleAppendChar(q.id, '.')}
+                    className="min-h-[40px] px-3.5 py-1.5 rounded-xl bg-[#0b1739] hover:bg-sky-900 border border-sky-700/80 text-cyan-300 font-mono font-black text-sm touch-manipulation select-none active:scale-95 transition-transform duration-75"
+                    title="Thêm dấu thập phân (.)"
+                  >
+                    . Thập phân
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleAppendChar(q.id, '/')}
+                    className="min-h-[40px] px-3.5 py-1.5 rounded-xl bg-[#0b1739] hover:bg-sky-900 border border-sky-700/80 text-cyan-300 font-mono font-black text-sm touch-manipulation select-none active:scale-95 transition-transform duration-75"
+                    title="Thêm dấu phân số (/)"
+                  >
+                    / Phân số
+                  </button>
+                  {userVal && (
+                    <button
+                      type="button"
+                      onClick={() => handleClearInput(q.id)}
+                      className="min-h-[40px] px-3 py-1.5 rounded-xl bg-rose-950/60 hover:bg-rose-900/70 border border-rose-500/40 text-rose-300 font-bold text-xs flex items-center gap-1 touch-manipulation select-none active:scale-95 transition-transform duration-75"
+                      title="Xoá ô đáp số"
+                    >
+                      <Delete className="w-3.5 h-3.5" />
+                      <span>Xoá</span>
+                    </button>
+                  )}
+                </div>
+              )}
 
               {/* Lời giải chi tiết khi nộp bài hoặc kiểm tra */}
               {showSolution && (
@@ -242,4 +321,5 @@ export const Part3ShortAnswer: React.FC<Part3ShortAnswerProps> = ({
       })}
     </div>
   );
-};
+});
+

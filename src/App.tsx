@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { examSets } from './data/examSets';
 import { INITIAL_LESSON_CATALOG } from './data/lessonCatalog';
 import {
@@ -343,9 +343,12 @@ export default function App() {
   }, [studentName, studentClass]);
 
   const examStartTimeRef = useRef<number | null>(null);
-  const [timerElapsedSeconds, setTimerElapsedSeconds] = useState<number>(0);
+  const timerElapsedSecondsRef = useRef<number>(0);
   const [submittedDurationSeconds, setSubmittedDurationSeconds] = useState<number>(0);
   const studentNameInputRef = useRef<HTMLInputElement | null>(null);
+  const handleTimerElapsedChange = useCallback((elapsed: number) => {
+    timerElapsedSecondsRef.current = elapsed;
+  }, []);
 
   // Initialize student answers
   const initializeAnswers = (exam: ExamSet): StudentAnswers => {
@@ -398,10 +401,11 @@ export default function App() {
     }
   }, [allExams]);
 
-  // Auto-save active exam progress to localStorage so offline refresh never loses answers
+  // Auto-save active exam progress to localStorage (debounced 250ms so touch interactions never block)
   useEffect(() => {
-    try {
-      if (!isSubmitted) {
+    if (isSubmitted) return;
+    const timeoutId = window.setTimeout(() => {
+      try {
         localStorage.setItem(
           ACTIVE_PROGRESS_STORAGE_KEY,
           JSON.stringify({
@@ -413,10 +417,11 @@ export default function App() {
             violations,
           })
         );
+      } catch {
+        // ignore
       }
-    } catch {
-      // ignore
-    }
+    }, 250);
+    return () => window.clearTimeout(timeoutId);
   }, [
     currentExam.id,
     isExamStarted,
@@ -594,7 +599,7 @@ export default function App() {
     setIsViolationModalOpen(false);
     setActiveFilterPart('all');
     examStartTimeRef.current = null;
-    setTimerElapsedSeconds(0);
+    timerElapsedSecondsRef.current = 0;
     setSubmittedDurationSeconds(0);
     setExamSessionKey((prev) => prev + 1);
     try {
@@ -605,24 +610,29 @@ export default function App() {
   };
 
   // Khi học sinh chọn "Bắt Đầu Làm Bài" -> Hiện bảng 2 dòng điền Họ và tên & Lớp
-  const handleStartExam = () => {
+  const handleStartExam = useCallback(() => {
     setStudentInfoError('');
     setIsStudentModalOpen(true);
     setTimeout(() => {
       studentNameInputRef.current?.focus();
     }, 60);
-  };
+  }, []);
+
+  const isExamStartedRef = useRef(isExamStarted);
+  useEffect(() => {
+    isExamStartedRef.current = isExamStarted;
+  }, [isExamStarted]);
 
   // Khi học sinh bấm trực tiếp vào câu hỏi khi chưa bắt đầu làm bài
-  const ensureExamStarted = (): boolean => {
-    if (isExamStarted) return true;
+  const ensureExamStarted = useCallback((): boolean => {
+    if (isExamStartedRef.current) return true;
     setStudentInfoError('Vui lòng điền Họ và tên và Lớp để bắt đầu làm bài.');
     setIsStudentModalOpen(true);
     setTimeout(() => {
       studentNameInputRef.current?.focus();
     }, 60);
     return false;
-  };
+  }, []);
 
   // Reset answers when changing exam
   const handleSelectExam = (examId: string) => {
@@ -685,14 +695,70 @@ export default function App() {
   };
 
   // Toggle bookmark
-  const toggleBookmark = (qId: string) => {
+  const toggleBookmark = useCallback((qId: string) => {
     setBookmarkedQuestions((prev) => {
       const next = new Set(prev);
       if (next.has(qId)) next.delete(qId);
       else next.add(qId);
       return next;
     });
-  };
+  }, []);
+
+  const handleSelectPart1Answer = useCallback(
+    (qId: string, optKey: 'A' | 'B' | 'C' | 'D') => {
+      if (!ensureExamStarted()) return;
+      setAnswers((prev) => ({
+        ...prev,
+        part1: { ...prev.part1, [qId]: optKey },
+      }));
+    },
+    [ensureExamStarted]
+  );
+
+  const handleSelectPart2Statement = useCallback(
+    (qId: string, label: 'a' | 'b' | 'c' | 'd', val: boolean) => {
+      if (!ensureExamStarted()) return;
+      setAnswers((prev) => ({
+        ...prev,
+        part2: {
+          ...prev.part2,
+          [qId]: {
+            ...prev.part2[qId],
+            [label]: val,
+          },
+        },
+      }));
+    },
+    [ensureExamStarted]
+  );
+
+  const handleChangePart3Answer = useCallback(
+    (qId: string, val: string) => {
+      if (!ensureExamStarted()) return;
+      setAnswers((prev) => ({
+        ...prev,
+        part3: { ...prev.part3, [qId]: val },
+      }));
+    },
+    [ensureExamStarted]
+  );
+
+  const handleChangePart4Order = useCallback(
+    (qId: string, orderedIds: string[]) => {
+      if (!ensureExamStarted()) return;
+      setInteractedPart4((prev) => {
+        if (prev.has(qId)) return prev;
+        const next = new Set(prev);
+        next.add(qId);
+        return next;
+      });
+      setAnswers((prev) => ({
+        ...prev,
+        part4: { ...prev.part4, [qId]: orderedIds },
+      }));
+    },
+    [ensureExamStarted]
+  );
 
   // Submit test
   const handleFinalSubmit = () => {
@@ -707,7 +773,11 @@ export default function App() {
       ? Math.max(5, Math.round((Date.now() - examStartTimeRef.current) / 1000))
       : 0;
     const elapsedSeconds =
-      timerElapsedSeconds > 0 ? timerElapsedSeconds : wallElapsed > 0 ? wallElapsed : 1200;
+      timerElapsedSecondsRef.current > 0
+        ? timerElapsedSecondsRef.current
+        : wallElapsed > 0
+        ? wallElapsed
+        : 1200;
 
     setSubmittedDurationSeconds(elapsedSeconds);
 
@@ -919,12 +989,13 @@ export default function App() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
           {/* Left Column: Questions Container (8-9 Cols) */}
           <div ref={questionsContainerRef} className="lg:col-span-8 xl:col-span-9 space-y-4 sm:space-y-6">
-            {/* Part Filter Tabs, Timer & Font Size Bar */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 no-print">
-              <div className="flex items-center gap-1.5 sm:gap-2 p-1.5 bg-[#071126] border border-sky-900/60 rounded-2xl overflow-x-auto no-scrollbar text-xs font-bold shadow-lg">
+            {/* Sticky Part Filter Tabs, Timer & Font Size Bar for 1-tap switching on iPhone 10-18 */}
+            <div className="sticky top-[52px] sm:top-[60px] z-30 bg-[#040817]/95 backdrop-blur-md py-1.5 -mx-2.5 px-2.5 sm:mx-0 sm:px-0 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 no-print border-b border-sky-950/60">
+              <div className="flex items-center gap-1.5 sm:gap-2 p-1 bg-[#071126] border border-sky-900/60 rounded-2xl overflow-x-auto no-scrollbar text-xs font-bold shadow-lg">
                 <button
+                  type="button"
                   onClick={() => setActiveFilterPart('all')}
-                  className={`min-h-[38px] px-3 sm:px-3.5 py-2 rounded-xl transition-all whitespace-nowrap ${
+                  className={`min-h-[38px] px-3 sm:px-3.5 py-1.5 rounded-xl touch-manipulation select-none transition-transform duration-75 whitespace-nowrap active:scale-95 ${
                     activeFilterPart === 'all'
                       ? 'bg-cyan-500 text-[#071126] font-black shadow-md'
                       : 'text-sky-300 hover:text-white hover:bg-sky-950/60'
@@ -933,8 +1004,9 @@ export default function App() {
                   Tất cả ({totalExamQuestions})
                 </button>
                 <button
+                  type="button"
                   onClick={() => setActiveFilterPart('part1')}
-                  className={`min-h-[38px] px-3 py-2 rounded-xl transition-all whitespace-nowrap ${
+                  className={`min-h-[38px] px-3 py-1.5 rounded-xl touch-manipulation select-none transition-transform duration-75 whitespace-nowrap active:scale-95 ${
                     activeFilterPart === 'part1'
                       ? 'bg-cyan-500 text-[#071126] font-black shadow-md'
                       : 'text-sky-300 hover:text-white hover:bg-sky-950/60'
@@ -943,8 +1015,9 @@ export default function App() {
                   Phần I ({currentExam.part1.length})
                 </button>
                 <button
+                  type="button"
                   onClick={() => setActiveFilterPart('part2')}
-                  className={`min-h-[38px] px-3 py-2 rounded-xl transition-all whitespace-nowrap ${
+                  className={`min-h-[38px] px-3 py-1.5 rounded-xl touch-manipulation select-none transition-transform duration-75 whitespace-nowrap active:scale-95 ${
                     activeFilterPart === 'part2'
                       ? 'bg-cyan-500 text-[#071126] font-black shadow-md'
                       : 'text-sky-300 hover:text-white hover:bg-sky-950/60'
@@ -953,8 +1026,9 @@ export default function App() {
                   Phần II ({currentExam.part2.length})
                 </button>
                 <button
+                  type="button"
                   onClick={() => setActiveFilterPart('part3')}
-                  className={`min-h-[38px] px-3 py-2 rounded-xl transition-all whitespace-nowrap ${
+                  className={`min-h-[38px] px-3 py-1.5 rounded-xl touch-manipulation select-none transition-transform duration-75 whitespace-nowrap active:scale-95 ${
                     activeFilterPart === 'part3'
                       ? 'bg-cyan-500 text-[#071126] font-black shadow-md'
                       : 'text-sky-300 hover:text-white hover:bg-sky-950/60'
@@ -964,8 +1038,9 @@ export default function App() {
                 </button>
                 {currentExam.part4 && currentExam.part4.length > 0 && (
                   <button
+                    type="button"
                     onClick={() => setActiveFilterPart('part4')}
-                    className={`min-h-[38px] px-3 py-2 rounded-xl transition-all whitespace-nowrap ${
+                    className={`min-h-[38px] px-3 py-1.5 rounded-xl touch-manipulation select-none transition-transform duration-75 whitespace-nowrap active:scale-95 ${
                       activeFilterPart === 'part4'
                         ? 'bg-cyan-500 text-[#071126] font-black shadow-md'
                         : 'text-sky-300 hover:text-white hover:bg-sky-950/60'
@@ -982,7 +1057,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={handleRestoreDefaultExam}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-bold transition-all"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-bold touch-manipulation select-none active:scale-95"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
                     <span>Khôi phục đề mặc định</span>
@@ -996,7 +1071,7 @@ export default function App() {
                     isRunning={isExamStarted && !isSubmitted}
                     onTimeUp={handleFinalSubmit}
                     resetKey={`${currentExam.id}-${examSessionKey}`}
-                    onElapsedChange={setTimerElapsedSeconds}
+                    onElapsedChange={handleTimerElapsedChange}
                   />
                 )}
 
@@ -1005,7 +1080,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setIsViolationModalOpen(true)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all shadow-md ${
+                    className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold touch-manipulation select-none active:scale-95 shadow-md ${
                       violations.length > 0
                         ? 'bg-rose-950/90 border-rose-500 text-rose-200 animate-pulse'
                         : !isSubmitted
@@ -1038,7 +1113,7 @@ export default function App() {
                       key={sz.id}
                       type="button"
                       onClick={() => setFontSize(sz.id)}
-                      className={`min-w-[34px] min-h-[32px] px-2 py-1 rounded-lg font-bold transition-colors ${
+                      className={`min-w-[36px] min-h-[32px] px-2 py-1 rounded-lg font-bold touch-manipulation select-none active:scale-95 ${
                         fontSize === sz.id
                           ? 'bg-cyan-500 text-[#040817]'
                           : 'text-sky-300 hover:text-white'
@@ -1058,13 +1133,7 @@ export default function App() {
                 <Part1MultipleChoice
                   questions={currentExam.part1}
                   selectedAnswers={answers.part1}
-                  onSelectAnswer={(qId, optKey) => {
-                    if (!ensureExamStarted()) return;
-                    setAnswers((prev) => ({
-                      ...prev,
-                      part1: { ...prev.part1, [qId]: optKey },
-                    }));
-                  }}
+                  onSelectAnswer={handleSelectPart1Answer}
                   isSubmitted={isSubmitted}
                   examMode={examMode}
                   bookmarkedQuestions={bookmarkedQuestions}
@@ -1081,19 +1150,7 @@ export default function App() {
                 <Part2TrueFalse
                   questions={currentExam.part2}
                   answers={answers.part2}
-                  onSelectStatement={(qId, label, val) => {
-                    if (!ensureExamStarted()) return;
-                    setAnswers((prev) => ({
-                      ...prev,
-                      part2: {
-                        ...prev.part2,
-                        [qId]: {
-                          ...prev.part2[qId],
-                          [label]: val,
-                        },
-                      },
-                    }));
-                  }}
+                  onSelectStatement={handleSelectPart2Statement}
                   isSubmitted={isSubmitted}
                   examMode={examMode}
                   bookmarkedQuestions={bookmarkedQuestions}
@@ -1110,13 +1167,7 @@ export default function App() {
                 <Part3ShortAnswer
                   questions={currentExam.part3}
                   answers={answers.part3}
-                  onAnswerChange={(qId, val) => {
-                    if (!ensureExamStarted()) return;
-                    setAnswers((prev) => ({
-                      ...prev,
-                      part3: { ...prev.part3, [qId]: val },
-                    }));
-                  }}
+                  onAnswerChange={handleChangePart3Answer}
                   isSubmitted={isSubmitted}
                   examMode={examMode}
                   bookmarkedQuestions={bookmarkedQuestions}
@@ -1135,18 +1186,7 @@ export default function App() {
                   <Part4StepOrdering
                     questions={currentExam.part4}
                     answers={answers.part4}
-                    onOrderChange={(qId, orderedIds) => {
-                      if (!ensureExamStarted()) return;
-                      setInteractedPart4((prev) => {
-                        const next = new Set(prev);
-                        next.add(qId);
-                        return next;
-                      });
-                      setAnswers((prev) => ({
-                        ...prev,
-                        part4: { ...prev.part4, [qId]: orderedIds },
-                      }));
-                    }}
+                    onOrderChange={handleChangePart4Order}
                     isSubmitted={isSubmitted}
                     examMode={examMode}
                     bookmarkedQuestions={bookmarkedQuestions}
@@ -1746,7 +1786,7 @@ export default function App() {
           <button
             type="button"
             onClick={() => setIsMobileNavOpen(true)}
-            className="min-h-[44px] px-3.5 py-2 rounded-xl bg-[#0b1739] hover:bg-sky-900 border border-sky-700/80 text-white flex items-center gap-2 text-xs font-bold active:scale-95 transition-transform"
+            className="min-h-[44px] px-3.5 py-2 rounded-xl bg-[#0b1739] hover:bg-sky-900 border border-sky-700/80 text-white flex items-center gap-2 text-xs font-bold touch-manipulation select-none active:scale-95 transition-transform duration-75"
           >
             <LayoutGrid className="w-4 h-4 text-cyan-400 shrink-0" />
             <span>
@@ -1757,30 +1797,22 @@ export default function App() {
             </span>
           </button>
 
-          {/* Hiển thị thời gian đã làm / trạng thái ở giữa trên ĐT */}
-          {isExamStarted && !isSubmitted && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-sky-950/80 border border-sky-800/70 text-cyan-300 font-mono text-xs font-bold">
-              <Clock className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-              <span>
-                {Math.floor(
-                  Math.max(0, currentExam.durationMinutes * 60 - timerElapsedSeconds) / 60
-                )
-                  .toString()
-                  .padStart(2, '0')}
-                :
-                {(Math.max(0, currentExam.durationMinutes * 60 - timerElapsedSeconds) % 60)
-                  .toString()
-                  .padStart(2, '0')}
-              </span>
-            </div>
-          )}
+          {/* Nút Mở Bài Học (Lý thuyết & 2 Đề ôn) nhanh trên ĐT */}
+          <button
+            type="button"
+            onClick={() => setIsLessonCatalogOpen(true)}
+            className="min-h-[44px] px-3 py-2 rounded-xl bg-[#0b1739] hover:bg-sky-900 border border-cyan-500/40 text-cyan-300 flex items-center gap-1.5 text-xs font-bold touch-manipulation select-none active:scale-95 transition-transform duration-75"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+            <span>Bài Học</span>
+          </button>
 
           {/* Nút Hành Động Chính (Bắt Đầu / Nộp Bài / Làm Lại) */}
           {isSubmitted ? (
             <button
               type="button"
               onClick={handleResetExam}
-              className="min-h-[44px] px-4 py-2 rounded-xl bg-cyan-500 text-[#040817] font-black text-xs flex items-center gap-1.5 shadow-md active:scale-95"
+              className="min-h-[44px] px-4 py-2 rounded-xl bg-cyan-500 text-[#040817] font-black text-xs flex items-center gap-1.5 shadow-md touch-manipulation select-none active:scale-95 transition-transform duration-75"
             >
               <RotateCcw className="w-4 h-4" />
               <span>Làm Lại</span>
@@ -1789,16 +1821,16 @@ export default function App() {
             <button
               type="button"
               onClick={handleStartExam}
-              className="flex-1 min-h-[44px] px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-400 to-teal-300 text-[#040817] font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-md active:scale-95"
+              className="flex-1 min-h-[44px] px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-400 to-teal-300 text-[#040817] font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-md touch-manipulation select-none active:scale-95 transition-transform duration-75"
             >
               <Play className="w-4 h-4 fill-current" />
-              <span>Bắt Đầu Làm Bài</span>
+              <span>Bắt Đầu</span>
             </button>
           ) : (
             <button
               type="button"
               onClick={() => setShowSubmitConfirm(true)}
-              className="min-h-[44px] px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-md active:scale-95"
+              className="min-h-[44px] px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-md touch-manipulation select-none active:scale-95 transition-transform duration-75"
             >
               <Send className="w-3.5 h-3.5" />
               <span>Nộp Bài</span>

@@ -26,7 +26,7 @@ interface Part2TrueFalseProps {
   totalQuestions?: number;
 }
 
-export const Part2TrueFalse: React.FC<Part2TrueFalseProps> = ({
+export const Part2TrueFalse: React.FC<Part2TrueFalseProps> = React.memo(({
   questions,
   answers,
   onSelectStatement,
@@ -84,7 +84,7 @@ export const Part2TrueFalse: React.FC<Part2TrueFalseProps> = ({
         });
 
         return (
-          <div key={q.id} id={`q-part2-${idx}`} className="space-y-3 transition-all scroll-mt-20">
+          <div key={q.id} id={`q-part2-${idx}`} className="space-y-3 scroll-mt-24">
             {/* Top Question Card (Màn hình câu hỏi màu xanh đậm & chữ trắng to rõ) */}
             <div className="rounded-2xl border border-sky-900/60 bg-[#071126] p-3.5 sm:p-6 md:p-7 shadow-2xl">
               {/* Header with Pills */}
@@ -160,7 +160,7 @@ export const Part2TrueFalse: React.FC<Part2TrueFalseProps> = ({
                   return (
                     <div
                       key={st.label}
-                      className={`p-3.5 sm:p-5 rounded-2xl border transition-all ${borderState} flex flex-col md:flex-row md:items-center justify-between gap-3.5 sm:gap-4`}
+                      className={`p-3.5 sm:p-5 rounded-2xl border ${borderState} flex flex-col md:flex-row md:items-center justify-between gap-3.5 sm:gap-4`}
                     >
                       {/* Statement badge & Content */}
                       <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
@@ -183,7 +183,7 @@ export const Part2TrueFalse: React.FC<Part2TrueFalseProps> = ({
                           type="button"
                           disabled={isSubmitted}
                           onClick={() => handleSelect(q.id, st, true)}
-                          className={`min-h-[46px] flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-black text-base transition-all ${
+                          className={`min-h-[48px] flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-black text-base touch-manipulation select-none transition-transform duration-75 ${
                             userChoice === true
                               ? showSolution
                                 ? st.isCorrect
@@ -206,7 +206,7 @@ export const Part2TrueFalse: React.FC<Part2TrueFalseProps> = ({
                           type="button"
                           disabled={isSubmitted}
                           onClick={() => handleSelect(q.id, st, false)}
-                          className={`min-h-[46px] flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-black text-base transition-all ${
+                          className={`min-h-[48px] flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-black text-base touch-manipulation select-none transition-transform duration-75 ${
                             userChoice === false
                               ? showSolution
                                 ? !st.isCorrect
@@ -278,4 +278,5 @@ export const Part2TrueFalse: React.FC<Part2TrueFalseProps> = ({
       })}
     </div>
   );
-};
+});
+

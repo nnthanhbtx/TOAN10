@@ -17,7 +17,7 @@ interface Part1MultipleChoiceProps {
   totalQuestions?: number;
 }
 
-export const Part1MultipleChoice: React.FC<Part1MultipleChoiceProps> = ({
+export const Part1MultipleChoice: React.FC<Part1MultipleChoiceProps> = React.memo(({
   questions,
   selectedAnswers,
   onSelectAnswer,
@@ -63,11 +63,11 @@ export const Part1MultipleChoice: React.FC<Part1MultipleChoiceProps> = ({
           <div
             key={q.id}
             id={`q-part1-${idx}`}
-            className="space-y-3 transition-all scroll-mt-20"
+            className="space-y-3 scroll-mt-24"
           >
             {/* Top Question Card (Khung câu hỏi nền xanh đậm, chữ trắng lớn nổi bật, vừa khít màn hình ĐT) */}
             <div
-              className={`rounded-2xl border transition-all p-3.5 sm:p-6 md:p-7 shadow-2xl ${
+              className={`rounded-2xl border p-3.5 sm:p-6 md:p-7 shadow-2xl ${
                 showSolution
                   ? isCorrect
                     ? 'bg-[#08152e] border-emerald-500/70 ring-1 ring-emerald-500/30'
@@ -76,7 +76,7 @@ export const Part1MultipleChoice: React.FC<Part1MultipleChoiceProps> = ({
                     : 'bg-[#071126] border-sky-900/60'
                   : currentAnswer
                   ? 'bg-[#091535] border-cyan-500/60 ring-1 ring-cyan-500/20'
-                  : 'bg-[#071126] border-sky-900/60 hover:border-sky-700/80'
+                  : 'bg-[#071126] border-sky-900/60'
               }`}
             >
               {/* Question Header: Pills */}
@@ -98,7 +98,7 @@ export const Part1MultipleChoice: React.FC<Part1MultipleChoiceProps> = ({
                   {/* Phản hồi trạng thái Đúng/Sai nếu đã làm */}
                   {currentAnswer && (
                     <div
-                      className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border transition-all ${
+                      className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border ${
                         isCorrect
                           ? 'border-emerald-400/80 bg-emerald-500/20 text-emerald-300'
                           : showSolution
@@ -152,7 +152,7 @@ export const Part1MultipleChoice: React.FC<Part1MultipleChoiceProps> = ({
 
                   // Khung lựa chọn
                   let containerStyle =
-                    'border-sky-800/60 bg-[#0b1739] hover:bg-[#112353] hover:border-sky-400 hover:shadow-xl hover:shadow-sky-950/60';
+                    'border-sky-800/60 bg-[#0b1739] hover:bg-[#112353] hover:border-sky-400';
                   // Huy hiệu chữ cái A, B, C, D (Màu vàng rực rỡ, kích thước lớn)
                   let badgeStyle =
                     'bg-[#f59e0b] text-[#0f172a] shadow-lg border-amber-300';
@@ -188,9 +188,10 @@ export const Part1MultipleChoice: React.FC<Part1MultipleChoiceProps> = ({
                   return (
                     <button
                       key={opt.key}
+                      type="button"
                       onClick={() => handleOptionClick(q, opt.key)}
                       disabled={isSubmitted}
-                      className={`flex items-center gap-3 sm:gap-4 min-h-[56px] p-3.5 sm:p-5 rounded-2xl border text-left transition-all min-w-0 w-full ${containerStyle} ${
+                      className={`flex items-center gap-3 sm:gap-4 min-h-[58px] p-3.5 sm:p-5 rounded-2xl border text-left touch-manipulation select-none transition-transform duration-75 min-w-0 w-full ${containerStyle} ${
                         !isSubmitted
                           ? 'cursor-pointer active:scale-[0.98]'
                           : 'cursor-default'
@@ -198,7 +199,7 @@ export const Part1MultipleChoice: React.FC<Part1MultipleChoiceProps> = ({
                     >
                       {/* Huy hiệu A, B, C, D */}
                       <span
-                        className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full font-black font-times text-lg sm:text-xl flex items-center justify-center shrink-0 border-2 transition-all ${badgeStyle}`}
+                        className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full font-black font-times text-lg sm:text-xl flex items-center justify-center shrink-0 border-2 ${badgeStyle}`}
                       >
                         {opt.key}
                       </span>
@@ -241,4 +242,5 @@ export const Part1MultipleChoice: React.FC<Part1MultipleChoiceProps> = ({
       })}
     </div>
   );
-};
+});
+

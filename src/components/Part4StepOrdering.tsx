@@ -33,7 +33,7 @@ const cleanRoleDescription = (desc?: string) => {
   return desc.replace(/^(?:Bước|BƯỚC|Dòng|Ý)\s*\d+[\:\.]?\s*/i, '').trim();
 };
 
-export const Part4StepOrdering: React.FC<Part4StepOrderingProps> = ({
+export const Part4StepOrdering: React.FC<Part4StepOrderingProps> = React.memo(({
   questions,
   answers,
   onOrderChange,
@@ -44,6 +44,8 @@ export const Part4StepOrdering: React.FC<Part4StepOrderingProps> = ({
 }) => {
   const [activePreviewQ, setActivePreviewQ] = useState<string | null>(null);
   const [checkedStatus, setCheckedStatus] = useState<Record<string, boolean>>({});
+  // Hỗ trợ chạm 2 bước bất kỳ để đổi chỗ tức thì trên điện thoại
+  const [selectedSwapStep, setSelectedSwapStep] = useState<Record<string, number | null>>({});
 
   // Cỡ chữ lớn hơn, rõ nét trên mọi điện thoại
   const promptTextSizeClass =
@@ -77,13 +79,41 @@ export const Part4StepOrdering: React.FC<Part4StepOrderingProps> = ({
     newOrder[index] = newOrder[targetIndex];
     newOrder[targetIndex] = temp;
 
+    setSelectedSwapStep((prev) => ({ ...prev, [qId]: null }));
     onOrderChange(qId, newOrder);
+  };
+
+  // Chạm vào 2 bước để đổi vị trí cực nhanh bằng 1 ngón tay trên iPhone / Android
+  const handleStepTapSwap = (q: StepOrderingQuestion, tappedIndex: number) => {
+    if (isSubmitted) return;
+    playClickSound();
+    const currentSelected = selectedSwapStep[q.id];
+
+    if (currentSelected === undefined || currentSelected === null) {
+      setSelectedSwapStep((prev) => ({ ...prev, [q.id]: tappedIndex }));
+      return;
+    }
+
+    if (currentSelected === tappedIndex) {
+      setSelectedSwapStep((prev) => ({ ...prev, [q.id]: null }));
+      return;
+    }
+
+    const currentOrder = answers[q.id] || q.steps.map((s) => s.id);
+    const newOrder = [...currentOrder];
+    const temp = newOrder[currentSelected];
+    newOrder[currentSelected] = newOrder[tappedIndex];
+    newOrder[tappedIndex] = temp;
+
+    setSelectedSwapStep((prev) => ({ ...prev, [q.id]: null }));
+    onOrderChange(q.id, newOrder);
   };
 
   // Shuffle steps for a question
   const handleShuffle = (q: StepOrderingQuestion) => {
     if (isSubmitted) return;
     playClickSound();
+    setSelectedSwapStep((prev) => ({ ...prev, [q.id]: null }));
     const shuffled = [...q.steps.map((s) => s.id)].sort(() => Math.random() - 0.5);
     onOrderChange(q.id, shuffled);
   };
@@ -113,6 +143,7 @@ export const Part4StepOrdering: React.FC<Part4StepOrderingProps> = ({
         const orderedIds = answers[q.id] || q.steps.map((s) => s.id);
         const hasChecked = checkedStatus[q.id] !== undefined;
         const showSolution = isSubmitted || examMode === 'practice' || hasChecked;
+        const activeSwapIdx = selectedSwapStep[q.id];
 
         // Map steps
         const stepMap = new Map<string, SolutionStep>();
@@ -129,7 +160,7 @@ export const Part4StepOrdering: React.FC<Part4StepOrderingProps> = ({
         const isFullyCorrect = correctPositions === q.steps.length;
 
         return (
-          <div key={q.id} id={`q-part4-${idx}`} className="space-y-3 transition-all scroll-mt-20">
+          <div key={q.id} id={`q-part4-${idx}`} className="space-y-3 scroll-mt-24">
             {/* Top Question Card (Màu xanh đậm, chữ trắng to nổi bật) */}
             <div className="rounded-2xl border border-sky-900/60 bg-[#071126] p-3.5 sm:p-6 md:p-7 shadow-2xl">
               {/* Header with Pills */}
@@ -192,8 +223,12 @@ export const Part4StepOrdering: React.FC<Part4StepOrderingProps> = ({
             <div className="rounded-2xl border border-sky-900/60 bg-[#071026] p-3 sm:p-6 shadow-2xl space-y-4">
               <div className="flex items-center justify-between gap-2.5 flex-wrap pb-2 border-b border-sky-950/80">
                 <div className="text-xs sm:text-sm font-bold text-sky-300 flex items-center gap-1.5">
-                  <Layers className="w-4 h-4 text-cyan-400" />
-                  <span>Sắp xếp thứ tự logic (chạm nút ↑ / ↓):</span>
+                  <Layers className="w-4 h-4 text-cyan-400 shrink-0" />
+                  <span>
+                    {activeSwapIdx !== undefined && activeSwapIdx !== null
+                      ? `Đang chọn vị trí #${activeSwapIdx + 1} — chạm vào bước khác để đổi chỗ ngay!`
+                      : 'Chạm 2 bước để đổi chỗ nhanh hoặc bấm nút ↑ / ↓:'}
+                  </span>
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
@@ -201,7 +236,7 @@ export const Part4StepOrdering: React.FC<Part4StepOrderingProps> = ({
                     <button
                       type="button"
                       onClick={() => handleShuffle(q)}
-                      className="min-h-[38px] px-3 py-1.5 rounded-xl border border-sky-800/80 bg-sky-950/80 hover:bg-sky-900/80 text-sky-300 hover:text-white text-xs font-bold flex items-center gap-1 transition-all"
+                      className="min-h-[40px] px-3 py-1.5 rounded-xl border border-sky-800/80 bg-sky-950/80 hover:bg-sky-900/80 text-sky-300 hover:text-white text-xs font-bold flex items-center gap-1 touch-manipulation select-none active:scale-95 transition-transform duration-75"
                       title="Xáo trộn lại các vị trí"
                     >
                       <Shuffle className="w-3.5 h-3.5" />
@@ -213,7 +248,7 @@ export const Part4StepOrdering: React.FC<Part4StepOrderingProps> = ({
                     <button
                       type="button"
                       onClick={() => handleCheckOrder(q)}
-                      className="min-h-[38px] flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-extrabold text-xs sm:text-sm transition-all shadow-md active:scale-95"
+                      className="min-h-[40px] flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-extrabold text-xs sm:text-sm touch-manipulation select-none transition-transform duration-75 shadow-md active:scale-95"
                     >
                       <Sparkles className="w-3.5 h-3.5" />
                       <span>Kiểm tra thứ tự</span>
@@ -225,7 +260,7 @@ export const Part4StepOrdering: React.FC<Part4StepOrderingProps> = ({
                     onClick={() =>
                       setActivePreviewQ(activePreviewQ === q.id ? null : q.id)
                     }
-                    className="min-h-[38px] text-xs font-bold px-3 py-1.5 rounded-xl bg-sky-950 hover:bg-sky-900 text-cyan-300 border border-sky-800/80 transition-all"
+                    className="min-h-[40px] text-xs font-bold px-3 py-1.5 rounded-xl bg-sky-950 hover:bg-sky-900 text-cyan-300 border border-sky-800/80 touch-manipulation select-none active:scale-95 transition-transform duration-75"
                   >
                     {activePreviewQ === q.id ? 'Ẩn bản xem' : 'Xem chuỗi bài giải'}
                   </button>
@@ -239,21 +274,35 @@ export const Part4StepOrdering: React.FC<Part4StepOrderingProps> = ({
                   if (!step) return null;
 
                   const isAtCorrectPosition = step.originalIndex === index + 1;
+                  const isSelectedForSwap = activeSwapIdx === index;
 
                   return (
                     <div
                       key={step.id}
-                      className={`flex items-start gap-2.5 sm:gap-4 p-3 sm:p-4 rounded-2xl border transition-all ${
+                      onClick={() => {
+                        if (!isSubmitted) handleStepTapSwap(q, index);
+                      }}
+                      className={`flex items-start gap-2.5 sm:gap-4 p-3 sm:p-4 rounded-2xl border touch-manipulation select-none transition-transform duration-75 ${
+                        !isSubmitted ? 'cursor-pointer' : ''
+                      } ${
                         showSolution
                           ? isAtCorrectPosition
                             ? 'bg-emerald-950/40 border-2 border-emerald-400 ring-1 ring-emerald-500/30'
                             : 'bg-amber-950/40 border-2 border-amber-400 ring-1 ring-amber-500/30'
+                          : isSelectedForSwap
+                          ? 'bg-[#122b66] border-2 border-cyan-400 ring-2 ring-cyan-400/40 shadow-lg'
                           : 'bg-[#0b1739] border-sky-800/60 hover:border-sky-400 shadow-md'
                       }`}
                     >
                       {/* Step Number Badge */}
                       <div className="flex flex-col items-center gap-1 shrink-0 pt-0.5">
-                        <span className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#f59e0b] text-[#0f172a] font-black font-times text-sm sm:text-base flex items-center justify-center shadow-md">
+                        <span
+                          className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full font-black font-times text-sm sm:text-base flex items-center justify-center shadow-md ${
+                            isSelectedForSwap
+                              ? 'bg-cyan-400 text-[#040817] ring-2 ring-white'
+                              : 'bg-[#f59e0b] text-[#0f172a]'
+                          }`}
+                        >
                           {index + 1}
                         </span>
                       </div>
@@ -279,32 +328,35 @@ export const Part4StepOrdering: React.FC<Part4StepOrderingProps> = ({
 
                       {/* Reordering Buttons: >= 44x44px hitbox for mobile thumbs */}
                       {!isSubmitted && (
-                        <div className="flex flex-col gap-1.5 shrink-0">
+                        <div
+                          className="flex flex-col gap-1.5 shrink-0"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <button
                             type="button"
                             onClick={() => moveStep(q.id, index, 'up')}
                             disabled={index === 0}
-                            className={`w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl border transition-all ${
+                            className={`w-11 h-11 flex items-center justify-center rounded-xl border touch-manipulation select-none transition-transform duration-75 ${
                               index === 0
                                 ? 'text-sky-900 border-sky-950 bg-sky-950/40 cursor-not-allowed opacity-30'
                                 : 'text-sky-200 border-sky-700 bg-sky-950 hover:bg-cyan-500/20 hover:text-cyan-200 hover:border-cyan-400 active:scale-95'
                             }`}
                             title="Di chuyển bước này lên"
                           >
-                            <ArrowUp className="w-4 h-4 sm:w-5 sm:h-5" />
+                            <ArrowUp className="w-5 h-5" />
                           </button>
                           <button
                             type="button"
                             onClick={() => moveStep(q.id, index, 'down')}
                             disabled={index === orderedIds.length - 1}
-                            className={`w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl border transition-all ${
+                            className={`w-11 h-11 flex items-center justify-center rounded-xl border touch-manipulation select-none transition-transform duration-75 ${
                               index === orderedIds.length - 1
                                 ? 'text-sky-900 border-sky-950 bg-sky-950/40 cursor-not-allowed opacity-30'
                                 : 'text-sky-200 border-sky-700 bg-sky-950 hover:bg-cyan-500/20 hover:text-cyan-200 hover:border-cyan-400 active:scale-95'
                             }`}
                             title="Di chuyển bước này xuống"
                           >
-                            <ArrowDown className="w-4 h-4 sm:w-5 sm:h-5" />
+                            <ArrowDown className="w-5 h-5" />
                           </button>
                         </div>
                       )}
@@ -385,4 +437,5 @@ export const Part4StepOrdering: React.FC<Part4StepOrderingProps> = ({
       })}
     </div>
   );
-};
+});
+

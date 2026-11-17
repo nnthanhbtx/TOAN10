@@ -722,7 +722,7 @@ function renderCustomTikzToSvg(rawCode: string): React.ReactNode {
   );
 }
 
-export const TikzFigure: React.FC<TikzFigureProps> = ({
+export const TikzFigure: React.FC<TikzFigureProps> = React.memo(({
   type,
   tikzCode,
   caption,
@@ -4366,4 +4366,5 @@ export const TikzFigure: React.FC<TikzFigureProps> = ({
       )}
     </div>
   );
-};
+});
+

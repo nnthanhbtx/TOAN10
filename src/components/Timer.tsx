@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Clock } from 'lucide-react';
 
 interface TimerProps {
@@ -9,7 +9,7 @@ interface TimerProps {
   onElapsedChange?: (elapsedSeconds: number) => void;
 }
 
-export const Timer: React.FC<TimerProps> = ({
+export const Timer: React.FC<TimerProps> = React.memo(({
   initialMinutes,
   isRunning,
   onTimeUp,
@@ -18,32 +18,30 @@ export const Timer: React.FC<TimerProps> = ({
 }) => {
   const totalInitialSeconds = initialMinutes * 60;
   const [secondsLeft, setSecondsLeft] = useState(totalInitialSeconds);
+  const onTimeUpRef = useRef(onTimeUp);
+  const onElapsedChangeRef = useRef(onElapsedChange);
+
+  useEffect(() => {
+    onTimeUpRef.current = onTimeUp;
+    onElapsedChangeRef.current = onElapsedChange;
+  }, [onTimeUp, onElapsedChange]);
 
   // Reset when initialMinutes or resetKey changes
   useEffect(() => {
     setSecondsLeft(initialMinutes * 60);
-    if (onElapsedChange) {
-      onElapsedChange(0);
-    }
+    onElapsedChangeRef.current?.(0);
   }, [initialMinutes, resetKey]);
 
   useEffect(() => {
     if (!isRunning) return;
 
-    if (secondsLeft <= 0) {
-      onTimeUp();
-      return;
-    }
-
     const interval = setInterval(() => {
       setSecondsLeft((prev) => {
         const next = prev <= 1 ? 0 : prev - 1;
-        if (onElapsedChange) {
-          onElapsedChange(totalInitialSeconds - next);
-        }
+        onElapsedChangeRef.current?.(totalInitialSeconds - next);
         if (prev <= 1) {
           clearInterval(interval);
-          onTimeUp();
+          setTimeout(() => onTimeUpRef.current(), 0);
           return 0;
         }
         return next;
@@ -51,7 +49,7 @@ export const Timer: React.FC<TimerProps> = ({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isRunning, secondsLeft, onTimeUp, totalInitialSeconds, onElapsedChange]);
+  }, [isRunning, totalInitialSeconds, resetKey]);
 
   if (!isRunning) return null;
 
@@ -63,7 +61,7 @@ export const Timer: React.FC<TimerProps> = ({
 
   return (
     <div
-      className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs sm:text-sm font-semibold tracking-wide transition-all shadow-md ${
+      className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs sm:text-sm font-semibold tracking-wide shadow-md ${
         isLowTime
           ? 'bg-rose-950/80 border-rose-500 text-rose-200 animate-pulse'
           : 'bg-[#0b1739] border-amber-500/40 text-amber-300'
@@ -83,4 +81,5 @@ export const Timer: React.FC<TimerProps> = ({
       )}
     </div>
   );
-};
+});
+
