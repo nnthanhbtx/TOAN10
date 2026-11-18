@@ -3,6 +3,8 @@
  * Provides crisp audio feedback for student actions, correct/wrong responses, and TTS reading for questions.
  */
 
+import { safeStorageGet, safeStorageSet } from './safeBrowser';
+
 let audioCtx: AudioContext | null = null;
 
 function getAudioContext(): AudioContext | null {
@@ -16,7 +18,9 @@ function getAudioContext(): AudioContext | null {
     }
   }
   if (audioCtx && audioCtx.state === 'suspended') {
-    audioCtx.resume();
+    Promise.resolve(audioCtx.resume()).catch(() => {
+      // ignore iOS WebKit autoplay policy errors
+    });
   }
   return audioCtx;
 }
@@ -24,13 +28,13 @@ function getAudioContext(): AudioContext | null {
 // Check if sound FX is enabled
 export function isAudioEnabled(): boolean {
   if (typeof window === 'undefined') return true;
-  const stored = localStorage.getItem('exam_sound_enabled');
+  const stored = safeStorageGet('exam_sound_enabled');
   return stored !== 'false';
 }
 
 export function setAudioEnabled(enabled: boolean): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem('exam_sound_enabled', enabled ? 'true' : 'false');
+  safeStorageSet('exam_sound_enabled', enabled ? 'true' : 'false');
 }
 
 /**

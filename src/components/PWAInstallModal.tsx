@@ -37,7 +37,7 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-[#071126] rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-cyan-500/40 text-white space-y-5 max-h-[90vh] overflow-y-auto">
+      <div className="bg-[#071126] rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-cyan-500/40 text-white space-y-5 max-h-[90vh] overflow-y-auto ios-scroll">
         {/* Header */}
         <div className="flex items-start justify-between gap-3 border-b border-sky-900/80 pb-4">
           <div className="flex items-center gap-3">
@@ -127,7 +127,7 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({
             <li className="flex items-start gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
               <span>
-                <strong>Tương thích hoàn hảo iPhone 10 đến iPhone 18 & Android:</strong> Tự động căn
+                <strong>Tương thích hoàn hảo iPhone 8, X, XS Max đến iPhone 18 & Android:</strong> Tự động căn
                 chỉnh vùng an toàn (Tai thỏ / Dynamic Island / Thanh vuốt Home), chống tự động
                 phóng to khi nhập đáp án và tích hợp thanh chọn câu hỏi nhanh ở đáy màn hình.
               </span>

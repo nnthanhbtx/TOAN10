@@ -7,6 +7,7 @@ import {
   fetchEntriesFromGoogleSheet,
   formatDurationVi,
 } from '../utils/googleSheetWebhook';
+import { copyTextSafe } from '../utils/safeBrowser';
 import {
   FileSpreadsheet,
   X,
@@ -60,7 +61,7 @@ export const GoogleSheetSyncModal: React.FC<GoogleSheetSyncModalProps> = ({
   if (!isOpen) return null;
 
   const handleCopyAppsScript = () => {
-    navigator.clipboard.writeText(GOOGLE_APPS_SCRIPT_CODE);
+    void copyTextSafe(GOOGLE_APPS_SCRIPT_CODE);
     setCopiedCode(true);
     setTimeout(() => setCopiedCode(false), 2500);
   };

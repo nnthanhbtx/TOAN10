@@ -17,6 +17,8 @@ import {
   GraduationCap,
   Calculator,
   Search,
+  ArrowLeft,
+  PlusCircle,
 } from 'lucide-react';
 
 interface LessonCatalogModalProps {
@@ -27,6 +29,7 @@ interface LessonCatalogModalProps {
   selectedLessonId: string;
   onSelectLesson: (lessonId: string) => void;
   onSelectPracticeExam: (exam: ExamSet, lessonId: string) => void;
+  onOpenImportForLesson?: (lesson: LessonCatalogItem) => void;
 }
 
 export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
@@ -37,11 +40,13 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
   selectedLessonId,
   onSelectLesson,
   onSelectPracticeExam,
+  onOpenImportForLesson,
 }) => {
   const [expandedLessonIds, setExpandedLessonIds] = useState<Set<string>>(
     () => new Set([selectedLessonId || 'bai-1'])
   );
   const [activeSubSection, setActiveSubSection] = useState<'theory' | 'exams'>('exams');
+  const [mobilePane, setMobilePane] = useState<'list' | 'detail'>('list');
   const [searchQuery, setSearchQuery] = useState('');
   const [volumeFilter, setVolumeFilter] = useState<'all' | 'Tập 1' | 'Tập 2'>('all');
 
@@ -71,7 +76,7 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
     LESSON_THEORY_CATALOG.find((t) => t.lessonId === activeLesson.id) ||
     LESSON_THEORY_CATALOG[0];
 
-  const practiceExamsTwo = activeLesson.practiceExams.slice(0, 2);
+  const practiceExamsList = activeLesson.practiceExams;
 
   const toggleExpandLesson = (lessonId: string) => {
     onSelectLesson(lessonId);
@@ -87,16 +92,16 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-2 sm:p-5 overflow-y-auto animate-fadeIn">
-      <div className="bg-[#071126] border border-sky-800/80 rounded-2xl max-w-6xl w-full max-h-[92dvh] flex flex-col shadow-2xl overflow-hidden text-white">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-1.5 sm:p-5 overflow-hidden animate-fadeIn">
+      <div className="bg-[#071126] border border-sky-800/80 rounded-2xl max-w-6xl w-full max-h-[92vh] max-h-[92dvh] flex flex-col shadow-2xl overflow-hidden text-white">
         {/* Top Header */}
-        <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3.5 sm:py-4 bg-gradient-to-r from-[#091534] via-[#0c1d47] to-[#091534] border-b border-sky-800/70">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-[#040817] shadow-lg shrink-0">
+        <div className="flex items-center justify-between gap-2.5 px-3.5 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-[#091534] via-[#0c1d47] to-[#091534] border-b border-sky-800/70 shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-[#040817] shadow-lg shrink-0">
               <BookOpen className="w-5 h-5 stroke-[2.2]" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-base sm:text-xl font-extrabold text-white tracking-tight truncate">
+              <h2 className="text-sm sm:text-xl font-extrabold text-white tracking-tight truncate">
                 Bài Học Toán 10 (Bài 1 – Bài {lessons.length})
               </h2>
             </div>
@@ -112,10 +117,40 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
           </button>
         </div>
 
-        {/* Main Body: Left Tree (Bài 1 -> Bài 27) & Right Content (Lý thuyết | 2 Đề ôn) */}
-        <div className="flex-1 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-sky-900/70">
-          {/* Cột Trái: Danh sách Bài 1 -> Bài 27, bên trong mỗi bài có Lý thuyết & 2 Đề ôn */}
-          <div className="lg:col-span-4 xl:col-span-4 p-3 sm:p-4 bg-[#060e21] overflow-y-auto max-h-[40dvh] lg:max-h-[78dvh] space-y-2.5">
+        {/* Thanh chuyển nhanh 2 khung trên màn hình Điện thoại (< lg) để không bị kẹt cuộn lồng nhau trên iOS */}
+        <div className="grid grid-cols-2 gap-1.5 p-2 bg-[#050c1d] border-b border-sky-900/70 lg:hidden shrink-0">
+          <button
+            type="button"
+            onClick={() => setMobilePane('list')}
+            className={`min-h-[38px] px-2.5 py-1.5 rounded-xl text-xs font-extrabold border transition-all ${
+              mobilePane === 'list'
+                ? 'bg-cyan-500 text-[#040817] border-cyan-300'
+                : 'bg-[#0b1739] text-sky-200 border-sky-800'
+            }`}
+          >
+            1. Danh Sách Bài 1–{lessons.length}
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobilePane('detail')}
+            className={`min-h-[38px] px-2.5 py-1.5 rounded-xl text-xs font-extrabold border transition-all truncate ${
+              mobilePane === 'detail'
+                ? 'bg-cyan-500 text-[#040817] border-cyan-300'
+                : 'bg-[#0b1739] text-sky-200 border-sky-800'
+            }`}
+          >
+            2. {activeLesson.name} (LT & Đề)
+          </button>
+        </div>
+
+        {/* Main Body: Left Tree (Bài 1 -> Bài 27) & Right Content (Lý thuyết | Đề ôn) */}
+        <div className="flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-12 lg:divide-x divide-sky-900/70 overflow-hidden">
+          {/* Cột Trái: Danh sách Bài 1 -> Bài 27 */}
+          <div
+            className={`${
+              mobilePane === 'list' ? 'flex-1' : 'hidden'
+            } lg:block lg:col-span-4 xl:col-span-4 p-3 sm:p-4 bg-[#060e21] overflow-y-auto ios-scroll min-h-0 space-y-2.5`}
+          >
             {/* Tìm kiếm & Lọc Tập 1 / Tập 2 */}
             <div className="space-y-2 sticky top-0 bg-[#060e21] pb-2 z-10 border-b border-sky-900/60">
               <div className="relative">
@@ -134,7 +169,7 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
                     key={vol}
                     type="button"
                     onClick={() => setVolumeFilter(vol)}
-                    className={`py-1.5 px-2 rounded-lg text-[11px] font-bold border transition-all ${
+                    className={`min-h-[34px] py-1.5 px-2 rounded-lg text-[11px] font-bold border transition-all ${
                       volumeFilter === vol
                         ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200'
                         : 'bg-[#0b1739] border-sky-900 text-sky-300 hover:text-white'
@@ -146,11 +181,11 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
               </div>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 pb-4">
               {filteredLessons.map((lesson) => {
                 const isSelected = activeLesson.id === lesson.id;
                 const isExpanded = expandedLessonIds.has(lesson.id);
-                const twoExams = lesson.practiceExams.slice(0, 2);
+                const lessonExams = lesson.practiceExams;
 
                 return (
                   <div
@@ -165,7 +200,7 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
                     <button
                       type="button"
                       onClick={() => toggleExpandLesson(lesson.id)}
-                      className="w-full flex items-center justify-between gap-2.5 p-2.5 text-left"
+                      className="w-full min-h-[48px] flex items-center justify-between gap-2.5 p-2.5 text-left"
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
                         <span
@@ -182,7 +217,7 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
                             {lesson.topicTitle}
                           </div>
                           <div className="text-[11px] text-sky-300 truncate mt-0.5">
-                            Lý thuyết & {twoExams.length} Đề ôn
+                            Lý thuyết & {lessonExams.length} Đề ôn
                           </div>
                         </div>
                       </div>
@@ -194,7 +229,7 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
                       )}
                     </button>
 
-                    {/* Bên trong mỗi Bài học: 1. Lý thuyết & 2. Hai Đề ôn */}
+                    {/* Bên trong mỗi Bài học: 1. Lý thuyết & 2. Đề ôn */}
                     {isExpanded && (
                       <div className="px-3 pb-3 pt-2 bg-[#050b1a]/95 border-t border-sky-900/60 space-y-1.5">
                         {/* 1. Lý thuyết */}
@@ -203,8 +238,9 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
                           onClick={() => {
                             onSelectLesson(lesson.id);
                             setActiveSubSection('theory');
+                            setMobilePane('detail');
                           }}
-                          className={`w-full flex items-center justify-between gap-2 p-2 rounded-lg border text-xs transition-all text-left ${
+                          className={`w-full min-h-[40px] flex items-center justify-between gap-2 p-2 rounded-lg border text-xs transition-all text-left ${
                             isSelected && activeSubSection === 'theory'
                               ? 'bg-amber-500/20 border-amber-400 text-amber-200 font-bold'
                               : 'bg-[#0b1739] border-sky-900/80 text-amber-300 hover:border-amber-400/50'
@@ -219,8 +255,8 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
                           </span>
                         </button>
 
-                        {/* 2. Hai Đề ôn */}
-                        {twoExams.map((exam, idx) => {
+                        {/* 2. Các Đề ôn */}
+                        {lessonExams.map((exam, idx) => {
                           const isCurrent = exam.id === currentExamId;
                           return (
                             <div
@@ -236,8 +272,9 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
                                 onClick={() => {
                                   onSelectLesson(lesson.id);
                                   setActiveSubSection('exams');
+                                  setMobilePane('detail');
                                 }}
-                                className="flex items-center gap-2 min-w-0 flex-1 text-left"
+                                className="flex items-center gap-2 min-w-0 flex-1 text-left min-h-[34px]"
                               >
                                 <FileText className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
                                 <span className="font-bold text-white truncate">
@@ -251,7 +288,7 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
                                   onSelectPracticeExam(exam, lesson.id);
                                   onClose();
                                 }}
-                                className={`px-2.5 py-1 rounded-lg text-[10px] font-black shrink-0 flex items-center gap-1 ${
+                                className={`min-h-[34px] px-2.5 py-1 rounded-lg text-[10px] font-black shrink-0 flex items-center gap-1 ${
                                   isCurrent
                                     ? 'bg-emerald-400 text-[#040817]'
                                     : 'bg-cyan-500 hover:bg-cyan-400 text-[#040817]'
@@ -271,8 +308,23 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
             </div>
           </div>
 
-          {/* Cột Phải: Nội dung chi tiết của Bài học đang chọn (Lý thuyết | 2 Đề ôn) */}
-          <div className="lg:col-span-8 xl:col-span-8 p-3.5 sm:p-6 space-y-4 overflow-y-auto max-h-[78dvh]">
+          {/* Cột Phải: Nội dung chi tiết của Bài học đang chọn (Lý thuyết | Đề ôn) */}
+          <div
+            className={`${
+              mobilePane === 'detail' ? 'flex-1' : 'hidden'
+            } lg:block lg:col-span-8 xl:col-span-8 p-3.5 sm:p-6 space-y-4 overflow-y-auto ios-scroll min-h-0`}
+          >
+            {/* Nút quay lại danh sách bài trên điện thoại */}
+            <div className="lg:hidden">
+              <button
+                type="button"
+                onClick={() => setMobilePane('list')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0b1739] border border-sky-800 text-cyan-300 text-xs font-bold"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Chọn Bài 1–{lessons.length} khác</span>
+              </button>
+            </div>
             {/* Header Bài học + Thanh chọn Lý thuyết / 2 Đề ôn */}
             <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-[#0b1739] via-[#091430] to-[#071126] border border-cyan-500/40 space-y-3 shadow-lg">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -315,7 +367,7 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
                   }`}
                 >
                   <FileText className="w-4 h-4 shrink-0" />
-                  <span>2 Đề Ôn ({activeLesson.name})</span>
+                  <span>{practiceExamsList.length} Đề Ôn ({activeLesson.name})</span>
                 </button>
               </div>
             </div>
@@ -464,11 +516,11 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
               </div>
             )}
 
-            {/* NỘI DUNG 2: 2 ĐỀ ÔN CỦA BÀI HỌC */}
+            {/* NỘI DUNG 2: ĐỀ ÔN CỦA BÀI HỌC */}
             {activeSubSection === 'exams' && (
               <div className="space-y-3.5 animate-fadeIn">
                 <div className="grid grid-cols-1 gap-3.5">
-                  {practiceExamsTwo.map((exam, idx) => {
+                  {practiceExamsList.map((exam, idx) => {
                     const totalQ =
                       exam.part1.length +
                       exam.part2.length +
@@ -541,6 +593,22 @@ export const LessonCatalogModal: React.FC<LessonCatalogModalProps> = ({
                     );
                   })}
                 </div>
+
+                {onOpenImportForLesson && (
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onOpenImportForLesson(activeLesson);
+                        onClose();
+                      }}
+                      className="w-full min-h-[44px] px-4 py-2.5 rounded-2xl bg-[#0b1739] hover:bg-sky-950/90 border border-dashed border-cyan-500/60 text-cyan-300 hover:text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all"
+                    >
+                      <PlusCircle className="w-4 h-4 text-cyan-400 shrink-0" />
+                      <span>Thêm Đề Từ File Word / PDF Riêng Cho {activeLesson.name}</span>
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

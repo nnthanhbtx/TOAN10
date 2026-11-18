@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   RotateCcw,
   Send,
@@ -18,6 +18,7 @@ import { isAudioEnabled, setAudioEnabled, playClickSound } from '../utils/audio'
 interface HeaderProps {
   currentExam: ExamSet;
   allExams: ExamSet[];
+  activeLessonExams?: ExamSet[];
   onSelectExam: (examId: string) => void;
   onDeleteExam?: (examId: string) => void;
   examMode: 'exam' | 'practice';
@@ -36,11 +37,13 @@ interface HeaderProps {
   onChangeFontSize?: (size: 'normal' | 'large' | 'xlarge') => void;
   isOnline?: boolean;
   onOpenPWAInfo?: () => void;
+  headerRef?: React.RefObject<HTMLElement | null>;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   currentExam,
   allExams,
+  activeLessonExams = [],
   onSelectExam,
   examMode,
   onToggleExamMode,
@@ -56,6 +59,7 @@ export const Header: React.FC<HeaderProps> = ({
   activeLessonLabel,
   isOnline = true,
   onOpenPWAInfo,
+  headerRef,
 }) => {
   const [soundOn, setSoundOn] = useState<boolean>(() => isAudioEnabled());
 
@@ -66,237 +70,295 @@ export const Header: React.FC<HeaderProps> = ({
     if (next) playClickSound();
   };
 
+  // Đồng bộ chặt chẽ danh sách Đề ôn chung + Đề ôn thuộc Bài học đang mở vào thanh chọn Đề
+  const { extraLessonExams, needsFallbackCurrent } = useMemo(() => {
+    const mainIds = new Set(allExams.map((e) => e.id));
+    const extra = activeLessonExams.filter((e) => e && e.id && !mainIds.has(e.id));
+    const extraIds = new Set(extra.map((e) => e.id));
+    const hasCurrent =
+      currentExam &&
+      currentExam.id !== 'empty-exam' &&
+      (mainIds.has(currentExam.id) || extraIds.has(currentExam.id));
+    return {
+      extraLessonExams: extra,
+      needsFallbackCurrent: Boolean(currentExam && currentExam.id !== 'empty-exam' && !hasCurrent),
+    };
+  }, [allExams, activeLessonExams, currentExam]);
+
+  const renderSelectOptions = (prefixDe: boolean) => (
+    <>
+      {needsFallbackCurrent && (
+        <option value={currentExam.id} className="bg-[#071126] text-cyan-200">
+          {currentExam.title}
+        </option>
+      )}
+      {extraLessonExams.length > 0 && (
+        <optgroup label={`Đề ôn ${activeLessonLabel || 'Bài học'}`} className="bg-[#071126] text-cyan-300">
+          {extraLessonExams.map((ex) => (
+            <option key={ex.id} value={ex.id} className="bg-[#071126] text-white">
+              {ex.title}
+            </option>
+          ))}
+        </optgroup>
+      )}
+      <optgroup label="Bộ Đề Ôn GK1 & Đề Tự Tạo" className="bg-[#071126] text-sky-300">
+        {allExams.map((ex) => (
+          <option key={ex.id} value={ex.id} className="bg-[#071126] text-white">
+            {prefixDe && !ex.title.toLowerCase().startsWith('đề') ? `Đề ${ex.title}` : ex.title}
+          </option>
+        ))}
+      </optgroup>
+    </>
+  );
+
   return (
-    <header className="sticky top-0 z-40 bg-[#070f24]/95 backdrop-blur-md border-b border-sky-950 text-white shadow-lg pt-safe">
-      <div className="max-w-7xl mx-auto px-2.5 sm:px-6 py-2 sm:py-3 flex items-center justify-between gap-2 md:gap-4">
-        {/* Zone 1: Brand Wordmark */}
-        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-cyan-600 to-indigo-600 flex items-center justify-center font-bold text-white shadow-md shadow-indigo-950/60 border border-cyan-400/30">
-            <span className="font-mono text-sm sm:text-base font-black">∑10</span>
-          </div>
-          <div className="flex items-center gap-2">
+    <header
+      ref={headerRef}
+      className="sticky top-0 z-40 bg-[#070f24]/95 backdrop-blur-md border-b border-sky-950 text-white shadow-lg pt-safe"
+    >
+      <div className="max-w-7xl mx-auto px-2.5 sm:px-6 py-2 lg:py-3">
+        {/* Hàng chính: Brand + Nav Desktop / Icon Mobile */}
+        <div className="flex items-center justify-between gap-2 md:gap-4">
+          {/* Zone 1: Brand Wordmark */}
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-cyan-600 to-indigo-600 flex items-center justify-center font-bold text-white shadow-md shadow-indigo-950/60 border border-cyan-400/30">
+              <span className="font-mono text-sm sm:text-base font-black">∑10</span>
+            </div>
             <span className="text-sm sm:text-lg font-bold tracking-tight text-white whitespace-nowrap">
               Toán 10
             </span>
           </div>
-        </div>
 
-        {/* Zone 2: Navigation & Quick Tools (Desktop) */}
-        <nav className="hidden lg:flex items-center gap-1.5 xl:gap-2 text-xs font-medium text-slate-300 flex-wrap">
-          {/* Bài Học (Bài 1 -> Bài 27: mỗi bài gồm Lý thuyết & 2 Đề ôn) */}
-          {onOpenLessonCatalog && (
-            <button
-              type="button"
-              onClick={onOpenLessonCatalog}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-200 border border-cyan-400/50 hover:from-cyan-500/30 hover:to-blue-500/30 hover:text-white transition-all whitespace-nowrap font-bold shadow-xs"
-              title="Bài Học (Bài 1 -> Bài 27: Lý thuyết & 2 Đề ôn)"
-            >
-              <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Bài Học</span>
-              <span className="px-1.5 py-0.2 rounded-full bg-cyan-400/20 text-cyan-200 text-[10px] font-mono">
-                {activeLessonLabel || '1–27'}
-              </span>
-            </button>
-          )}
-
-          {/* Chọn Đề Thi (Đề ôn GK1 00 -> Đề ôn GK1 06) */}
-          <div className="flex items-center gap-1.5 bg-[#0b1739] px-3 py-1.5 rounded-xl border border-sky-800/60 shadow-xs">
-            {allExams.length > 0 ? (
-              <select
-                value={currentExam.id}
-                onChange={(e) => onSelectExam(e.target.value)}
-                className="bg-transparent text-white font-bold focus:outline-none cursor-pointer pr-1 max-w-[155px] truncate"
-                title="Chọn đề ôn tập"
-              >
-                {allExams.map((ex) => (
-                  <option key={ex.id} value={ex.id} className="bg-[#071126] text-white">
-                    {ex.title}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <span className="text-slate-400 italic">Trống</span>
-            )}
-          </div>
-
-          {/* Tạo Đề Từ File Word / PDF */}
-          <button
-            onClick={onOpenImportWord}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/10 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/20 hover:text-white transition-all whitespace-nowrap font-bold"
-            title="Tạo đề bằng file Word (.docx) hoặc PDF (.pdf)"
-          >
-            <FileText className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Tạo Đề Word / PDF</span>
-          </button>
-
-          {/* Bảng Xếp Hạng (tích hợp sẵn Liên kết Google Sheet bên trong) */}
-          <button
-            onClick={onOpenLeaderboard}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 text-amber-300 border border-amber-400/50 hover:bg-amber-500/25 hover:text-white transition-all whitespace-nowrap font-bold shadow-xs"
-            title="Xem Bảng Xếp Hạng & Đồng bộ Google Sheet"
-          >
-            <Trophy className="w-3.5 h-3.5 text-amber-400" />
-            <span>Bảng Xếp Hạng</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-amber-400/25 text-amber-200 text-[10px] font-mono">
-              {leaderboardCount}
-            </span>
-          </button>
-
-          {/* Chế độ thi / Luyện tập */}
-          <button
-            onClick={onToggleExamMode}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all whitespace-nowrap font-bold ${
-              examMode === 'exam'
-                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30'
-                : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30'
-            }`}
-            title="Nhấp để đổi giữa chế độ thi tính giờ hoặc ôn tập có giải thích tức thì"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>{examMode === 'exam' ? 'Chế độ Thi Tính Giờ' : 'Chế độ Luyện Tập'}</span>
-          </button>
-
-          {/* Âm thanh khi làm bài */}
-          <button
-            onClick={handleToggleSound}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all whitespace-nowrap font-bold border ${
-              soundOn
-                ? 'bg-sky-500/15 text-sky-200 border-sky-400/50 hover:bg-sky-500/25'
-                : 'bg-rose-500/15 text-rose-300 border-rose-500/40 hover:bg-rose-500/25'
-            }`}
-            title={soundOn ? 'Âm thanh: Đang bật (Bấm để tắt)' : 'Âm thanh: Đang tắt (Bấm để bật)'}
-          >
-            {soundOn ? <Volume2 className="w-3.5 h-3.5 text-cyan-300" /> : <VolumeX className="w-3.5 h-3.5 text-rose-300" />}
-            <span>{soundOn ? 'Âm thanh: Bật' : 'Âm thanh: Tắt'}</span>
-          </button>
-
-          {/* Nút Offline / Điện thoại */}
-          {onOpenPWAInfo && (
-            <button
-              type="button"
-              onClick={onOpenPWAInfo}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all whitespace-nowrap font-bold border ${
-                isOnline
-                  ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25'
-                  : 'bg-amber-500/20 text-amber-300 border-amber-400/60 animate-pulse'
-              }`}
-              title="Chế độ Điện thoại (iPhone 10 - iPhone 18 & Android) & Hoạt động không cần Wi-Fi"
-            >
-              {isOnline ? (
-                <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
-              ) : (
-                <WifiOff className="w-3.5 h-3.5 text-amber-300" />
-              )}
-              <span>{isOnline ? 'App ĐT / Offline' : 'Đang Offline'}</span>
-            </button>
-          )}
-        </nav>
-
-        {/* Zone 3: Primary Action & Mobile Controls */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-          {/* Quick tools on small screens */}
-          <div className="flex lg:hidden items-center gap-1">
+          {/* Zone 2: Navigation & Quick Tools (Desktop lg+) */}
+          <nav className="hidden lg:flex items-center gap-1.5 xl:gap-2 text-xs font-medium text-slate-300 flex-wrap">
             {onOpenLessonCatalog && (
               <button
                 type="button"
                 onClick={onOpenLessonCatalog}
-                className="min-h-[38px] px-2.5 py-1.5 flex items-center gap-1 rounded-xl bg-cyan-500/20 border border-cyan-400/50 text-cyan-200 hover:bg-cyan-500/30 text-xs font-bold whitespace-nowrap"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-200 border border-cyan-400/50 hover:from-cyan-500/30 hover:to-blue-500/30 hover:text-white transition-all whitespace-nowrap font-bold shadow-xs"
                 title="Bài Học (Bài 1 -> Bài 27: Lý thuyết & 2 Đề ôn)"
               >
-                <BookOpen className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
                 <span>Bài Học</span>
+                <span className="px-1.5 py-0.2 rounded-full bg-cyan-400/20 text-cyan-200 text-[10px] font-mono">
+                  {activeLessonLabel || '1–27'}
+                </span>
               </button>
             )}
 
-            {allExams.length > 0 && (
-              <div className="flex items-center gap-0.5 bg-[#0b1739] px-2 py-1.5 rounded-xl border border-sky-800/60 text-xs">
+            <div className="flex items-center gap-1.5 bg-[#0b1739] px-3 py-1.5 rounded-xl border border-sky-800/60 shadow-xs">
+              {allExams.length > 0 || extraLessonExams.length > 0 || needsFallbackCurrent ? (
                 <select
                   value={currentExam.id}
                   onChange={(e) => onSelectExam(e.target.value)}
-                  className="bg-transparent text-white font-bold focus:outline-none cursor-pointer max-w-[115px] sm:max-w-[140px] truncate"
+                  className="bg-transparent text-white font-bold focus:outline-none cursor-pointer pr-1 max-w-[175px] truncate"
+                  title="Chọn đề ôn tập"
                 >
-                  {allExams.map((ex) => (
-                    <option key={ex.id} value={ex.id} className="bg-[#071126] text-white">
-                      {ex.title.toLowerCase().startsWith('đề') ? ex.title : `Đề ${ex.title}`}
-                    </option>
-                  ))}
+                  {renderSelectOptions(false)}
                 </select>
-              </div>
-            )}
+              ) : (
+                <span className="text-slate-400 italic">Trống</span>
+              )}
+            </div>
 
             <button
-              onClick={onOpenLeaderboard}
-              className="min-w-[38px] min-h-[38px] flex items-center justify-center rounded-xl bg-amber-500/15 border border-amber-400/50 text-amber-300 hover:bg-amber-500/25"
-              title="Bảng Xếp Hạng"
-            >
-              <Trophy className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={handleToggleSound}
-              className={`min-w-[38px] min-h-[38px] flex items-center justify-center rounded-xl border ${
-                soundOn
-                  ? 'bg-sky-950/80 border-sky-800 text-sky-300'
-                  : 'bg-rose-950/80 border-rose-800 text-rose-300'
-              }`}
-              title={soundOn ? 'Tắt âm thanh' : 'Bật âm thanh'}
-            >
-              {soundOn ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-            </button>
-
-            <button
+              type="button"
               onClick={onOpenImportWord}
-              className="min-w-[38px] min-h-[38px] flex items-center justify-center rounded-xl bg-[#0b1739] border border-sky-800/60 text-cyan-300 hover:bg-sky-900/60"
-              title="Tạo đề từ Word / PDF"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/10 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/20 hover:text-white transition-all whitespace-nowrap font-bold"
+              title="Tạo đề bằng file Word (.docx) hoặc PDF (.pdf)"
             >
-              <FileText className="w-4 h-4" />
+              <FileText className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Tạo Đề Word / PDF</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onOpenLeaderboard}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 text-amber-300 border border-amber-400/50 hover:bg-amber-500/25 hover:text-white transition-all whitespace-nowrap font-bold shadow-xs"
+              title="Xem Bảng Xếp Hạng & Đồng bộ Google Sheet"
+            >
+              <Trophy className="w-3.5 h-3.5 text-amber-400" />
+              <span>Bảng Xếp Hạng</span>
+              <span className="px-1.5 py-0.2 rounded-full bg-amber-400/25 text-amber-200 text-[10px] font-mono">
+                {leaderboardCount}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onToggleExamMode}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all whitespace-nowrap font-bold ${
+                examMode === 'exam'
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30'
+                  : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30'
+              }`}
+              title="Nhấp để đổi giữa chế độ thi tính giờ hoặc ôn tập có giải thích tức thì"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{examMode === 'exam' ? 'Chế độ Thi Tính Giờ' : 'Chế độ Luyện Tập'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleToggleSound}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all whitespace-nowrap font-bold border ${
+                soundOn
+                  ? 'bg-sky-500/15 text-sky-200 border-sky-400/50 hover:bg-sky-500/25'
+                  : 'bg-rose-500/15 text-rose-300 border-rose-500/40 hover:bg-rose-500/25'
+              }`}
+              title={soundOn ? 'Âm thanh: Đang bật (Bấm để tắt)' : 'Âm thanh: Đang tắt (Bấm để bật)'}
+            >
+              {soundOn ? <Volume2 className="w-3.5 h-3.5 text-cyan-300" /> : <VolumeX className="w-3.5 h-3.5 text-rose-300" />}
+              <span>{soundOn ? 'Âm thanh: Bật' : 'Âm thanh: Tắt'}</span>
             </button>
 
             {onOpenPWAInfo && (
               <button
                 type="button"
                 onClick={onOpenPWAInfo}
-                className={`min-w-[38px] min-h-[38px] flex items-center justify-center rounded-xl border ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all whitespace-nowrap font-bold border ${
                   isOnline
-                    ? 'bg-emerald-950/70 border-emerald-500/50 text-emerald-300'
-                    : 'bg-amber-500/25 border-amber-400 text-amber-300 animate-pulse'
+                    ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25'
+                    : 'bg-amber-500/20 text-amber-300 border-amber-400/60 animate-pulse'
                 }`}
-                title="Chế độ Điện thoại & Không cần Wi-Fi"
+                title="Chế độ Điện thoại (iPhone 8 / X / XS Max -> iPhone 18 & Android) & Hoạt động không cần Wi-Fi"
               >
-                {isOnline ? <Smartphone className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
+                {isOnline ? (
+                  <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
+                ) : (
+                  <WifiOff className="w-3.5 h-3.5 text-amber-300" />
+                )}
+                <span>{isOnline ? 'App ĐT / Offline' : 'Đang Offline'}</span>
+              </button>
+            )}
+          </nav>
+
+          {/* Zone 3: Quick Icon Controls (Mobile < lg) + Primary Action (Desktop) */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <div className="flex lg:hidden items-center gap-1">
+              {onOpenLessonCatalog && (
+                <button
+                  type="button"
+                  onClick={onOpenLessonCatalog}
+                  className="min-h-[36px] px-2.5 py-1.5 flex items-center gap-1 rounded-xl bg-cyan-500/20 border border-cyan-400/50 text-cyan-200 active:bg-cyan-500/35 text-xs font-bold whitespace-nowrap"
+                  title="Bài Học (Bài 1 -> Bài 27: Lý thuyết & 2 Đề ôn)"
+                >
+                  <BookOpen className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                  <span>Bài Học</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={onOpenImportWord}
+                className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-xl bg-[#0b1739] border border-sky-800/60 text-cyan-300 active:bg-sky-900"
+                title="Tạo đề từ Word / PDF"
+                aria-label="Tạo đề từ Word / PDF"
+              >
+                <FileText className="w-4 h-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={onOpenLeaderboard}
+                className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-xl bg-amber-500/15 border border-amber-400/50 text-amber-300 active:bg-amber-500/30"
+                title="Bảng Xếp Hạng"
+                aria-label="Bảng Xếp Hạng"
+              >
+                <Trophy className="w-4 h-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={handleToggleSound}
+                className={`min-w-[36px] min-h-[36px] flex items-center justify-center rounded-xl border ${
+                  soundOn
+                    ? 'bg-sky-950/80 border-sky-800 text-sky-300'
+                    : 'bg-rose-950/80 border-rose-800 text-rose-300'
+                }`}
+                title={soundOn ? 'Tắt âm thanh' : 'Bật âm thanh'}
+                aria-label={soundOn ? 'Tắt âm thanh' : 'Bật âm thanh'}
+              >
+                {soundOn ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+              </button>
+
+              {onOpenPWAInfo && (
+                <button
+                  type="button"
+                  onClick={onOpenPWAInfo}
+                  className={`min-w-[36px] min-h-[36px] flex items-center justify-center rounded-xl border ${
+                    isOnline
+                      ? 'bg-emerald-950/70 border-emerald-500/50 text-emerald-300'
+                      : 'bg-amber-500/25 border-amber-400 text-amber-300 animate-pulse'
+                  }`}
+                  title="Chế độ Điện thoại & Không cần Wi-Fi"
+                  aria-label="Chế độ Điện thoại & Offline"
+                >
+                  {isOnline ? <Smartphone className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
+                </button>
+              )}
+            </div>
+
+            {isSubmitted ? (
+              <button
+                type="button"
+                onClick={onResetExam}
+                className="min-h-[36px] flex items-center gap-1 px-2.5 sm:px-3 py-1.5 text-xs font-bold text-white bg-[#0b1739] hover:bg-sky-900 border border-sky-800/80 rounded-xl transition-all whitespace-nowrap shadow-sm"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Làm Lại Đề</span>
+                <span className="sm:hidden">Lại</span>
+              </button>
+            ) : !isStarted ? (
+              <button
+                type="button"
+                onClick={onStartExam}
+                className="hidden sm:flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl transition-all shadow-md shadow-emerald-950/60 whitespace-nowrap hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <Play className="w-3.5 h-3.5 fill-current" />
+                <span>Bắt Đầu Làm Bài</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onSubmitExam}
+                className="hidden sm:flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-all shadow-md shadow-indigo-950/60 whitespace-nowrap hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>Nộp Bài Thi</span>
               </button>
             )}
           </div>
+        </div>
 
-          {isSubmitted ? (
-            <button
-              onClick={onResetExam}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-white bg-[#0b1739] hover:bg-sky-900 border border-sky-800/80 rounded-xl transition-all whitespace-nowrap shadow-sm"
+        {/* Hàng 2 dành riêng cho Điện thoại (iPhone 8 375px / iPhone X / XS Max -> iPhone 18): vừa vặn hoàn hảo, không cắt chữ */}
+        <div className="flex lg:hidden items-center gap-1.5 mt-1.5 pt-1.5 border-t border-sky-950/80">
+          <div className="flex-1 min-w-0 flex items-center bg-[#0b1739] px-2.5 py-1 rounded-xl border border-sky-800/60">
+            <select
+              value={currentExam.id}
+              onChange={(e) => onSelectExam(e.target.value)}
+              className="w-full min-w-0 bg-transparent text-white text-xs sm:text-sm font-bold focus:outline-none cursor-pointer truncate min-h-[30px]"
+              aria-label="Chọn đề ôn tập"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Làm Lại Đề</span>
-              <span className="sm:hidden">Làm lại</span>
-            </button>
-          ) : !isStarted ? (
-            <button
-              onClick={onStartExam}
-              className="hidden sm:flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl transition-all shadow-md shadow-emerald-950/60 whitespace-nowrap hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <Play className="w-3.5 h-3.5 fill-current" />
-              <span>Bắt Đầu Làm Bài</span>
-            </button>
-          ) : (
-            <button
-              onClick={onSubmitExam}
-              className="hidden sm:flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-all shadow-md shadow-indigo-950/60 whitespace-nowrap hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <Send className="w-3.5 h-3.5" />
-              <span>Nộp Bài Thi</span>
-            </button>
-          )}
+              {renderSelectOptions(true)}
+            </select>
+          </div>
+
+          <button
+            type="button"
+            onClick={onToggleExamMode}
+            className={`min-h-[38px] px-2.5 py-1 rounded-xl text-[11px] font-extrabold border flex items-center gap-1 shrink-0 whitespace-nowrap ${
+              examMode === 'exam'
+                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+            }`}
+            title="Đổi chế độ Thi Tính Giờ hoặc Luyện Tập"
+          >
+            <Sparkles className="w-3 h-3 shrink-0" />
+            <span>{examMode === 'exam' ? 'Thi giờ' : 'Luyện tập'}</span>
+          </button>
         </div>
       </div>
     </header>
   );
 };
-

@@ -72,7 +72,11 @@ function convertRawStepQuestion(
       points: 0.75,
     };
   }
-  const sentences = raw.prompt.split(/(?<=\.)\s+/);
+  const sentences = raw.prompt
+    .replace(/\.(\s+)/g, '.\n')
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean);
   const hasMultipleSentences = sentences.length > 1;
   const problemStatement = hasMultipleSentences
     ? sentences.slice(0, -1).join(' ')

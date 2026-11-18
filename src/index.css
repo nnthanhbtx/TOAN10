@@ -2,8 +2,7 @@
 @import "katex/dist/katex.min.css";
 
 @layer base {
-  html,
-  body {
+  html {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background-color: #040817;
     color: #f1f5f9;
@@ -12,7 +11,18 @@
     text-size-adjust: 100%;
     -webkit-text-size-adjust: 100%;
     -webkit-font-smoothing: antialiased;
+    height: -webkit-fill-available;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #040817;
+    color: #f1f5f9;
+    -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
     overscroll-behavior-y: none;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
   }
 
   button,
@@ -23,12 +33,19 @@
   }
 }
 
-/* Chống tự động phóng to (auto-zoom) trên iOS Safari (iPhone 10 -> iPhone 18) khi học sinh chạm vào ô nhập đáp án */
+/* Chống tự động phóng to (auto-zoom) trên iOS Safari (iPhone 8 / X / XS Max -> iPhone 18) khi chạm vào ô nhập hoặc select */
 @supports (-webkit-touch-callout: none) {
   input,
-  textarea {
+  textarea,
+  select {
     font-size: max(16px, 1em);
   }
+}
+
+/* Cuộn mượt cảm ứng quán tính trên iOS WebKit */
+.ios-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 
 /* Chuẩn font Times New Roman cho toàn bộ nội dung chữ trong câu hỏi Toán */
@@ -38,7 +55,7 @@
 
 /* Custom crisp formula typography chuẩn LaTeX, vừa khít mọi màn hình điện thoại */
 .katex {
-  font-size: 1.08em;
+  font-size: 1.06em;
   line-height: 1.45;
 }
 
@@ -67,13 +84,24 @@
   -webkit-overflow-scrolling: touch;
 }
 
-/* Hỗ trợ tai thỏ (Notch), Dynamic Island và thanh Home Indicator đáy màn hình từ iPhone 10 (iPhone X) đến iPhone 18 & Android */
+/* Hỗ trợ tai thỏ (Notch iPhone X / XS Max), Dynamic Island và thanh Home Indicator */
 .pt-safe {
   padding-top: env(safe-area-inset-top, 0px);
 }
 
 .pb-safe {
   padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0.5rem));
+}
+
+/* Canh vị trí thanh lọc sticky nằm ngay dưới Header trên mọi iPhone có tai thỏ / không tai thỏ */
+.sticky-below-header {
+  top: var(--app-header-h, 88px);
+}
+
+@media (min-width: 1024px) {
+  .sticky-below-header {
+    top: var(--app-header-h, 60px);
+  }
 }
 
 /* Ẩn thanh cuộn rườm rà trên các thanh tab ngang ở điện thoại */

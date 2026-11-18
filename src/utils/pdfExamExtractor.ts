@@ -1,5 +1,5 @@
 import * as pdfjsLib from 'pdfjs-dist';
-import { normalizeMathExpressionsToLatex } from './docxMathExtractor';
+import { normalizeMathExpressionsToLatex } from './mathLatexNormalizer';
 
 // Cấu hình worker cho pdfjs-dist trong Vite
 try {

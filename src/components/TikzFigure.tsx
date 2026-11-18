@@ -1580,7 +1580,23 @@ export const TikzFigure: React.FC<TikzFigureProps> = React.memo(({
   const handleCopyCode = () => {
     playClickSound();
     const code = getTikzCode(type);
-    navigator.clipboard.writeText(code);
+    if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      navigator.clipboard.writeText(code).catch(() => {});
+    } else if (typeof document !== 'undefined') {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = code;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch {
+        // ignore
+      }
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

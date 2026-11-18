@@ -4,14 +4,8 @@ import {
   normalizeWordHtmlToText,
   SAMPLE_WORD_CONTENT,
 } from '../utils/wordExamParser';
-import {
-  extractWordDocxWithMath,
-  normalizeMathExpressionsToLatex,
-} from '../utils/docxMathExtractor';
-import {
-  extractMathExamFromPdf,
-  extractTextFromPdfLocal,
-} from '../utils/pdfExamExtractor';
+import { normalizeMathExpressionsToLatex } from '../utils/mathLatexNormalizer';
+import { copyTextSafe } from '../utils/safeBrowser';
 import { ExamSet } from '../types/exam';
 import { MathRenderer } from './MathRenderer';
 import { TikzFigure } from './TikzFigure';
@@ -78,7 +72,10 @@ export const ImportWordModal: React.FC<ImportWordModalProps> = ({
         setProcessingStatus(
           'Đang giải nén file Word (.docx), trích xuất công thức OMML sang LaTeX $...$, hình vẽ và đáp án gạch chân...'
         );
-        const arrayBuffer = await file.arrayBuffer();
+        const [{ extractWordDocxWithMath }, arrayBuffer] = await Promise.all([
+          import('../utils/docxMathExtractor'),
+          file.arrayBuffer(),
+        ]);
         const extractedText = await extractWordDocxWithMath(arrayBuffer);
 
         setContent(extractedText);
@@ -88,7 +85,10 @@ export const ImportWordModal: React.FC<ImportWordModalProps> = ({
         if (nameWithoutExt) setExamTitle(nameWithoutExt);
         // Bước 1: Trích xuất cục bộ tức thì (< 0.3s) để giáo viên/học sinh thấy ngay nội dung & hình vẽ
         setProcessingStatus('Đang quét nhanh cấu trúc câu hỏi, số mũ và công thức từ file PDF...');
-        const bufferCopy = await file.arrayBuffer();
+        const [{ extractMathExamFromPdf, extractTextFromPdfLocal }, bufferCopy] = await Promise.all([
+          import('../utils/pdfExamExtractor'),
+          file.arrayBuffer(),
+        ]);
         const instantLocalText = await extractTextFromPdfLocal(bufferCopy.slice(0));
         if (instantLocalText && instantLocalText.trim()) {
           setContent(instantLocalText);
@@ -194,7 +194,7 @@ export const ImportWordModal: React.FC<ImportWordModalProps> = ({
 
   // Sao chép nội dung mẫu
   const handleCopySample = () => {
-    navigator.clipboard.writeText(SAMPLE_WORD_CONTENT);
+    void copyTextSafe(SAMPLE_WORD_CONTENT);
     setCopiedSample(true);
     setTimeout(() => setCopiedSample(false), 2000);
   };

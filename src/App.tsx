@@ -49,6 +49,11 @@ import {
   stopSpeech,
 } from './utils/audio';
 import {
+  safeStorageGet,
+  safeStorageSet,
+  safeStorageRemove,
+} from './utils/safeBrowser';
+import {
   Send,
   AlertTriangle,
   Play,
@@ -176,6 +181,13 @@ export default function App() {
     return lessonCatalog.flatMap((l) => l.practiceExams);
   }, [lessonCatalog]);
 
+  const [selectedLessonId, setSelectedLessonId] = useState<string>('bai-1');
+
+  const activeLessonExams = useMemo<ExamSet[]>(() => {
+    const activeLesson = lessonCatalog.find((l) => l.id === selectedLessonId);
+    return activeLesson ? activeLesson.practiceExams : [];
+  }, [lessonCatalog, selectedLessonId]);
+
   const currentExam = useMemo(
     () =>
       allExams.find((ex) => ex.id === selectedExamId) ||
@@ -184,6 +196,29 @@ export default function App() {
       EMPTY_EXAM,
     [allExams, allLessonPracticeExams, selectedExamId]
   );
+
+  // Đo chiều cao thực của Header (bao gồm Safe Area Notch iPhone X/XS Max -> 18) để thanh lọc sticky không bao giờ bị che
+  const rootContainerRef = useRef<HTMLDivElement | null>(null);
+  const headerElRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const updateHeaderOffset = () => {
+      const h = headerElRef.current?.offsetHeight;
+      if (h && rootContainerRef.current) {
+        rootContainerRef.current.style.setProperty('--app-header-h', `${h}px`);
+      }
+    };
+    updateHeaderOffset();
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined' && headerElRef.current) {
+      ro = new ResizeObserver(updateHeaderOffset);
+      ro.observe(headerElRef.current);
+    }
+    window.addEventListener('resize', updateHeaderOffset);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener('resize', updateHeaderOffset);
+    };
+  }, []);
 
   const [examMode, setExamMode] = useState<'exam' | 'practice'>('exam');
   const [isExamStarted, setIsExamStarted] = useState<boolean>(() => {
@@ -239,7 +274,6 @@ export default function App() {
 
   const [isImportWordOpen, setIsImportWordOpen] = useState(false);
   const [isLessonCatalogOpen, setIsLessonCatalogOpen] = useState(false);
-  const [selectedLessonId, setSelectedLessonId] = useState<string>('bai-1');
   const [targetLessonForImport, setTargetLessonForImport] = useState<LessonCatalogItem | null>(
     null
   );
@@ -324,22 +358,14 @@ export default function App() {
   const baselineViewportRef = useRef<{ width: number; height: number } | null>(null);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(LEADERBOARD_STORAGE_KEY, JSON.stringify(leaderboardEntries));
-    } catch {
-      // ignore
-    }
+    safeStorageSet(LEADERBOARD_STORAGE_KEY, JSON.stringify(leaderboardEntries));
   }, [leaderboardEntries]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        STUDENT_INFO_STORAGE_KEY,
-        JSON.stringify({ studentName, studentClass })
-      );
-    } catch {
-      // ignore
-    }
+    safeStorageSet(
+      STUDENT_INFO_STORAGE_KEY,
+      JSON.stringify({ studentName, studentClass })
+    );
   }, [studentName, studentClass]);
 
   const examStartTimeRef = useRef<number | null>(null);
@@ -392,34 +418,26 @@ export default function App() {
 
   // Save custom exams to localStorage for full offline persistence
   useEffect(() => {
-    try {
-      const defaultIds = new Set(examSets.map((e) => e.id));
-      const customOnly = allExams.filter((e) => !defaultIds.has(e.id) && e.id !== 'empty-exam');
-      localStorage.setItem(CUSTOM_EXAMS_STORAGE_KEY, JSON.stringify(customOnly));
-    } catch {
-      // ignore
-    }
+    const defaultIds = new Set(examSets.map((e) => e.id));
+    const customOnly = allExams.filter((e) => !defaultIds.has(e.id) && e.id !== 'empty-exam');
+    safeStorageSet(CUSTOM_EXAMS_STORAGE_KEY, JSON.stringify(customOnly));
   }, [allExams]);
 
   // Auto-save active exam progress to localStorage (debounced 250ms so touch interactions never block)
   useEffect(() => {
     if (isSubmitted) return;
     const timeoutId = window.setTimeout(() => {
-      try {
-        localStorage.setItem(
-          ACTIVE_PROGRESS_STORAGE_KEY,
-          JSON.stringify({
-            selectedExamId: currentExam.id,
-            isExamStarted,
-            answers,
-            interactedPart4: Array.from(interactedPart4),
-            bookmarked: Array.from(bookmarkedQuestions),
-            violations,
-          })
-        );
-      } catch {
-        // ignore
-      }
+      safeStorageSet(
+        ACTIVE_PROGRESS_STORAGE_KEY,
+        JSON.stringify({
+          selectedExamId: currentExam.id,
+          isExamStarted,
+          answers,
+          interactedPart4: Array.from(interactedPart4),
+          bookmarked: Array.from(bookmarkedQuestions),
+          violations,
+        })
+      );
     }, 250);
     return () => window.clearTimeout(timeoutId);
   }, [
@@ -489,9 +507,18 @@ export default function App() {
 
     // 2. Phát hiện màn hình bị che 1 góc nhỏ bởi cửa sổ nổi AI (Floating window / Pop-up / Split-screen overlay) làm mất tiêu điểm
     const handleWindowBlur = () => {
+      const activeTag = document.activeElement?.tagName;
+      // Trên iPhone 8 / X / XS Max, chạm mở bánh xe chọn <select> hoặc bàn phím nhập liệu có thể làm blur tạm thời
+      if (activeTag === 'SELECT' || activeTag === 'INPUT' || activeTag === 'TEXTAREA') {
+        return;
+      }
       setTimeout(() => {
         if (document.hidden || document.visibilityState === 'hidden') {
           return; // Đã xử lý bởi visibilitychange
+        }
+        const curActiveTag = document.activeElement?.tagName;
+        if (curActiveTag === 'SELECT' || curActiveTag === 'INPUT' || curActiveTag === 'TEXTAREA') {
+          return;
         }
         if (!document.hasFocus()) {
           recordViolation(
@@ -602,11 +629,7 @@ export default function App() {
     timerElapsedSecondsRef.current = 0;
     setSubmittedDurationSeconds(0);
     setExamSessionKey((prev) => prev + 1);
-    try {
-      localStorage.removeItem(ACTIVE_PROGRESS_STORAGE_KEY);
-    } catch {
-      // ignore
-    }
+    safeStorageRemove(ACTIVE_PROGRESS_STORAGE_KEY);
   };
 
   // Khi học sinh chọn "Bắt Đầu Làm Bài" -> Hiện bảng 2 dòng điền Họ và tên & Lớp
@@ -920,11 +943,15 @@ export default function App() {
   }, [answers, currentExam, interactedPart4, isSubmitted]);
 
   return (
-    <div className="min-h-screen min-h-dvh bg-[#040817] text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950">
+    <div
+      ref={rootContainerRef}
+      className="min-h-screen bg-[#040817] text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950"
+    >
       {/* Header */}
       <Header
         currentExam={currentExam}
         allExams={allExams}
+        activeLessonExams={activeLessonExams}
         onSelectExam={handleSelectExam}
         onDeleteExam={handleDeleteExam}
         examMode={examMode}
@@ -950,6 +977,7 @@ export default function App() {
         onChangeFontSize={setFontSize}
         isOnline={isOnline}
         onOpenPWAInfo={() => setIsPWAInfoOpen(true)}
+        headerRef={headerElRef}
       />
 
       {/* Offline Banner Notification (hiển thị gọn gàng khi thiết bị tắt Wi-Fi / 4G) */}
@@ -989,8 +1017,8 @@ export default function App() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
           {/* Left Column: Questions Container (8-9 Cols) */}
           <div ref={questionsContainerRef} className="lg:col-span-8 xl:col-span-9 space-y-4 sm:space-y-6">
-            {/* Sticky Part Filter Tabs, Timer & Font Size Bar for 1-tap switching on iPhone 10-18 */}
-            <div className="sticky top-[52px] sm:top-[60px] z-30 bg-[#040817]/95 backdrop-blur-md py-1.5 -mx-2.5 px-2.5 sm:mx-0 sm:px-0 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 no-print border-b border-sky-950/60">
+            {/* Sticky Part Filter Tabs, Timer & Font Size Bar for 1-tap switching on iPhone 8 / X / XS Max -> 18 */}
+            <div className="sticky sticky-below-header z-30 bg-[#040817]/95 backdrop-blur-md py-1.5 -mx-2.5 px-2.5 sm:mx-0 sm:px-0 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 no-print border-b border-sky-950/60">
               <div className="flex items-center gap-1.5 sm:gap-2 p-1 bg-[#071126] border border-sky-900/60 rounded-2xl overflow-x-auto no-scrollbar text-xs font-bold shadow-lg">
                 <button
                   type="button"
@@ -1672,6 +1700,10 @@ export default function App() {
         selectedLessonId={selectedLessonId}
         onSelectLesson={setSelectedLessonId}
         onSelectPracticeExam={handleSelectLessonPracticeExam}
+        onOpenImportForLesson={(lesson) => {
+          setTargetLessonForImport(lesson);
+          setIsImportWordOpen(true);
+        }}
       />
 
       {/* Import Word Modal */}
